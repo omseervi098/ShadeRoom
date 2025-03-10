@@ -1,22 +1,24 @@
-FROM python:3.10-slim
+FROM python:3.10-alpine
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y curl && apt-get clean
+
+ENV MODEL_NAME=sam_vit_b_encoder.onnx
+ENV MODEL_DIR=/app/models
+ENV BASE_URL=https://huggingface.co/omprakash96/sam-encoders/resolve/main/$MODEL_NAME
+ENV ENCODER_PATH="${MODEL_DIR}/${MODEL_NAME}"
+
+RUN mkdir -p $MODEL_DIR
+
+RUN CURL -L -o $MODEL_DIR -H "Authorization: Bearer ${HF_AUTH_TOKEN}" $BASE_URL
 
 COPY requirements.txt .
 
 RUN pip install --upgrade pip
-
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip freeze
-
-RUN mkdir -p /app/models
-
-ADD https://huggingface.co/omprakash96/sam-encoders/resolve/main/sam_vit_b_encoder.onnx /app/models/sam_vit_b_encoder.onnx
-
 COPY . .
-
-ENV ENCODER_PATH=/app/models/sam_vit_b_encoder.onnx
 
 EXPOSE 7860
 
