@@ -3,7 +3,7 @@ FROM python:3.10-alpine
 WORKDIR /app
 
 RUN apk update && \
-    apk add --no-cache curl
+    apk add --no-cache curl \
 
 ENV HF_AUTH_TOKEN=${HF_AUTH_TOKEN}
 ENV MODEL_NAME=sam_vit_b_encoder.onnx
@@ -12,9 +12,9 @@ ENV BASE_URL=https://huggingface.co/omprakash96/sam-encoders/resolve/main/$MODEL
 ENV ENCODER_PATH="${MODEL_DIR}/${MODEL_NAME}"
 
 RUN mkdir -p $MODEL_DIR
-RUN echo $HF_AUTH_TOKEN
 
-RUN curl -L -o $MODEL_DIR -H "Authorization: Bearer $HF_AUTH_TOKEN" $BASE_URL
+RUN --mount=type=secret,id=HF_AUTH_TOKEN,mode=0444,required=true \
+    curl -L -o $MODEL_DIR -H "Authorization: Bearer $(cat /run/secrets/HF_AUTH_TOKEN)" $BASE_URL
 
 COPY requirements.txt .
 
