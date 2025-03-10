@@ -134,7 +134,7 @@ def get_embedding():
 
         image_embedding = output[0].tolist()
         logger.info("Embedding generated successfully")
-        return jsonify({"embedding": image_embedding}), 200
+        return flask.jsonify(image_embedding)
 
     except Exception as e:
         logger.error(f"Embedding generation failed: {e}")

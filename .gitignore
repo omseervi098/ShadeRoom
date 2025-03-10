@@ -1,5 +1,8 @@
 .idea/
 models/*
+public/
+.gitignore
+
 
 ### react template
 .DS_*
