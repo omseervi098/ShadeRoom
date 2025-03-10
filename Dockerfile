@@ -2,6 +2,10 @@ FROM python:3.10-alpine
 
 WORKDIR /app
 
+RUN apt-get update && \
+    apt-get install -y curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV MODEL_NAME=sam_vit_b_encoder.onnx
 ENV MODEL_DIR=/app/models
