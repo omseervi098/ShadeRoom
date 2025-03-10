@@ -13,7 +13,7 @@ ENV ENCODER_PATH="${MODEL_DIR}/${MODEL_NAME}"
 RUN mkdir -p $MODEL_DIR
 
 RUN --mount=type=secret,id=HF_AUTH_TOKEN,mode=0444,required=true \
-    curl -L -o $MODEL_DIR -H "Authorization: Bearer $(cat /run/secrets/HF_AUTH_TOKEN)" $BASE_URL
+    curl -L -o $ENCODER_PATH -H "Authorization: Bearer $(cat /run/secrets/HF_AUTH_TOKEN)" $BASE_URL
 
 COPY requirements.txt .
 
