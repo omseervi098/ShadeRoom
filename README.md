@@ -1,6 +1,5 @@
 ---
 title: ShadeRoom
-emoji: smile
 colorFrom: blue
 colorTo: purple
 sdk: docker
