@@ -11,11 +11,12 @@ ENV BASE_URL=https://huggingface.co/omprakash96/sam-encoders/resolve/main/$MODEL
 ENV ENCODER_PATH="${MODEL_DIR}/${MODEL_NAME}"
 
 RUN mkdir -p $MODEL_DIR
+RUN echo "${HF_AUTH_TOKEN}"
 
 RUN curl -L -o $MODEL_DIR -H "Authorization: Bearer ${HF_AUTH_TOKEN}" $BASE_URL
 
 COPY requirements.txt .
-RUN echo "${HF_AUTH_TOKEN}"
+
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
