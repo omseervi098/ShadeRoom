@@ -5,6 +5,7 @@ WORKDIR /app
 RUN apk update && \
     apk add --no-cache curl
 
+ENV HF_AUTH_TOKEN=${HF_AUTH_TOKEN}
 ENV MODEL_NAME=sam_vit_b_encoder.onnx
 ENV MODEL_DIR=/app/models
 ENV BASE_URL=https://huggingface.co/omprakash96/sam-encoders/resolve/main/$MODEL_NAME
