@@ -1,10 +1,9 @@
 ---
-title: {{title}}
-emoji: {{emoji}}
-colorFrom: {{colorFrom}}
-colorTo: {{colorTo}}
-sdk: {{sdk}}
-sdk_version: "{{sdkVersion}}"
+title: ShadeRoom
+emoji: smile
+colorFrom: blue
+colorTo: purple
+sdk: docker
 app_file: app.py
 pinned: false
 ---
