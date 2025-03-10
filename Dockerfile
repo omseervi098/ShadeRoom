@@ -12,7 +12,7 @@ RUN pip freeze
 
 RUN mkdir -p /app/models
 
-RUN wget -O /app/models/sam_vit_b_encoder.onnx https://huggingface.co/omprakash96/sam-encoders/resolve/main/sam_vit_b_encoder.onnx
+ADD https://huggingface.co/omprakash96/sam-encoders/resolve/main/sam_vit_b_encoder.onnx /app/models/sam_vit_b_encoder.onnx
 
 COPY . .
 
