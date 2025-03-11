@@ -40,8 +40,14 @@ def get_encoder_session() -> onnxruntime.InferenceSession:
 
     if encoder_session is None:
         try:
+            # Set intra_op_num_threads to control parallelism
+            session_options = onnxruntime.SessionOptions()
+            session_options.intra_op_num_threads = 2  # Limit threads
+
             encoder_session = onnxruntime.InferenceSession(
-                ENCODER_PATH, providers=['CPUExecutionProvider']
+                ENCODER_PATH,
+                providers=['CPUExecutionProvider'],
+                sess_options=session_options
             )
             logger.info(f"Loaded ONNX model from : {ENCODER_PATH}")
         except Exception as e:
@@ -51,9 +57,21 @@ def get_encoder_session() -> onnxruntime.InferenceSession:
     return encoder_session
 def preprocess_image(image: Image.Image) -> np.ndarray:
     try:
+        # Resize image to a manageable size before further processing to reduce memory usage
+        max_dim = 1500
+        width, height = image.size
+        if max(width, height) > max_dim:
+            scale = max_dim / max(width, height)
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            logger.info(f"Resized image from {width}x{height} to {new_width}x{new_height}")
+
         cv_image = np.array(image)
         if cv_image.ndim == 2:  # Convert grayscale to RGB
             cv_image = cv2.cvtColor(cv_image, cv2.COLOR_GRAY2RGB)
+        elif cv_image.shape[2] == 4:  # Handle RGBA
+            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGBA2RGB)
 
         # Calculate scaling
         scale_x = INPUT_SIZE[1] / cv_image.shape[1]
@@ -68,7 +86,7 @@ def preprocess_image(image: Image.Image) -> np.ndarray:
             (INPUT_SIZE[1], INPUT_SIZE[0]),
             flags=cv2.INTER_LINEAR
         )
-        return np.ascontiguousarray(resized_image.astype(np.float32)) # Ensure memory is contiguous for better performance
+        return np.ascontiguousarray(resized_image.astype(np.float32))
     except Exception as e:
         logger.error(f"Image preprocessing failed: {e}")
         raise
@@ -132,9 +150,9 @@ def get_embedding():
             logger.error("No output from encoder")
             return jsonify({"error": "Embedding generation failed"}), 500
 
-        image_embedding = output[0].tolist()
+        image_embedding = output[0].astype(np.float32).tolist()
         logger.info("Embedding generated successfully")
-        return flask.jsonify(image_embedding)
+        return jsonify({"embedding": image_embedding})
 
     except Exception as e:
         logger.error(f"Embedding generation failed: {e}")
