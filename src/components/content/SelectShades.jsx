@@ -1,4 +1,4 @@
-import { SwatchBook } from "lucide-react";
+import { SwatchBook, PaintRoller, Crop } from "lucide-react";
 import RecommendedColors from "../../assets/select_shades_recommended_colors.png";
 import RecommendedTextures from "../../assets/select_shades_recommended_textures.png";
 import SelectFromColorPalette from "../../assets/select_shades_select_from_color_palette.png";
@@ -6,11 +6,73 @@ import UploadOwnTexture from "../../assets/select_shades_upload_own_texture.png"
 import ExtractColorsFromImage from "../../assets/select_shades_extract_colors_from_image.png";
 import { useGeneral } from "../../hooks/general/generalContext.js";
 import ImageUploader from "../ImageUploader.jsx";
+import ImageCropper from "../ImageCropper.jsx";
 
 export default function SelectShades() {
   const { openModal } = useGeneral();
+  const handleTextureUpload = (image) => {
+    // Handle the uploaded texture file here
+    let croppedImage = null;
+    console.log(image);
+    console.log("Uploaded texture file:", image);
+    openModal({
+      title: {
+        header: "Rotate or Crop Your Texture",
+        subHeader: "Rotate or crop your texture to fit the model.",
+        icon: <Crop className="w-5 h-5" />,
+        allowClose: true,
+      },
+      content: (
+        <ImageCropper
+          imageSrc={URL.createObjectURL(image)}
+          aspect={4 / 3}
+          onCropComplete={(image) => {
+            console.log("callback from ImageCropper", image);
+            croppedImage = image;
+          }}
+        />
+      ),
+      action: [
+        {
+          label: "Crop & Confirm",
+          onClick: () => {
+            if (croppedImage) {
+              console.log("croppedImage", croppedImage);
+            } else {
+              console.error("cropped image not found");
+            }
+          },
+        },
+      ],
+    });
+  };
+  const onClickUploadTexture = () => {
+    openModal({
+      title: {
+        header: "upload your own texture",
+        subHeader: "ensure good quality texture",
+        icon: <PaintRoller className="w-5 h-5" />,
+        allowClose: true,
+      },
+      content: (
+        <ImageUploader
+          maxFileSizeInMB={5}
+          acceptedFileTypes={["image/jpeg", "image/png", "image/webp"]}
+          onUpload={handleTextureUpload}
+        />
+      ),
+      action: [
+        {
+          label: "Next",
+          onClick: () => {
+            console.log("Next");
+          },
+        },
+      ],
+    });
+  };
   return (
-    <div className="flex flex-col justify-center w-full px-3 md:px-5">
+    <div className="flex flex-col justify-center w-full px-3 md:px-5 py-1">
       <div className="flex justify-between items-center">
         <h1 className="text-xl text-primary font-bold">
           Select Shades for Room
@@ -76,9 +138,7 @@ export default function SelectShades() {
           </div>
           <div
             className="bg-secondary rounded-xl shadow-md text-center overflow-hidden cursor-pointer"
-            onClick={() => {
-              openModal("Upload Own Texture", <ImageUploader />);
-            }}
+            onClick={onClickUploadTexture}
           >
             <img
               src={`${UploadOwnTexture}`}

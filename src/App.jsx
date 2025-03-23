@@ -14,7 +14,6 @@ function App() {
       <StepperProvider>
         <Routes>
           <Route path="/" element={<Landing />} />
-
           <Route path="/journey" element={<Journey />} />
         </Routes>
       </StepperProvider>

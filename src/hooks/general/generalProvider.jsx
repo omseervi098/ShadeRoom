@@ -5,12 +5,26 @@ export const GeneralProvider = ({ children }) => {
   // State to manage the modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modal, setModal] = useState({
-    title: "title",
+    title: {
+      header: null,
+      subHeader: null,
+      icon: null,
+      allowClose: true,
+    },
     content: null,
-    action: [],
+    action: [
+      {
+        label: null,
+        onClick: null,
+      },
+      {
+        label: null,
+        onClick: null,
+      },
+    ],
   });
 
-  const openModal = (title, content, action) => {
+  const openModal = ({ title, content, action }) => {
     if (isModalOpen) {
       console.error("Modal is already open");
       return;
@@ -36,10 +50,7 @@ export const GeneralProvider = ({ children }) => {
     setIsModalOpen(true);
   };
   const closeModal = () => {
-    if (!isModalOpen) {
-      console.error("Modal is already closed");
-      return;
-    }
+    console.log("closeModal", isModalOpen);
     setIsModalOpen(false);
   };
 

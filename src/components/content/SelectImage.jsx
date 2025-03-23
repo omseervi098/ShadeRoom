@@ -1,24 +1,51 @@
 import { predefinedImages } from "../../data/predefinedImages.js";
 import ImageUploader from "../ImageUploader.jsx";
 import { useGeneral } from "../../hooks/general/generalContext.js";
-
+import ImageCropper from "../ImageCropper.jsx";
+import { Crop } from "lucide-react";
+import { useEditor } from "../../hooks/editor/editorContext.js";
+import { useStepper } from "../../hooks/stepper/stepperContext.js";
 export default function SelectImage() {
-  const { openModal } = useGeneral();
+  const { isModalOpen, openModal, closeModal } = useGeneral();
+  const { handleNext } = useStepper();
+  const { image: globalimage, updateImage } = useEditor();
   const handleUpload = (image) => {
+    let croppedImage = null;
     console.log(image);
     console.log("Image uploaded");
-    openModal(
-      "Uploaded Image",
-      <div className="flex flex-col items-center justify-center">
-        <img
-          src={URL.createObjectURL(image)}
-          alt="Uploaded"
-          className="object-cover w-full h-[85%] rounded-sm"
+    openModal({
+      title: {
+        header: "Rotate or Crop Your Texture",
+        subHeader: "Rotate or crop your texture to fit the model.",
+        icon: <Crop className="w-5 h-5" />,
+        allowClose: true,
+      },
+      content: (
+        <ImageCropper
+          imageSrc={URL.createObjectURL(image)}
+          aspect={4 / 3}
+          onCropComplete={(image) => {
+            console.log("callback from ImageCropper", image);
+            croppedImage = image;
+          }}
         />
-        <div className="py-1 text-sm text-primary font-bold">{image.name}</div>
-      </div>,
-    );
-    // Handle the uploaded image
+      ),
+      action: [
+        {
+          label: "Crop & Confirm",
+          onClick: () => {
+            if (croppedImage) {
+              console.log("croppedImage", croppedImage);
+              updateImage(croppedImage);
+              handleNext(croppedImage);
+              closeModal();
+            } else {
+              console.error("cropped image not found");
+            }
+          },
+        },
+      ],
+    });
   };
   return (
     <>
@@ -36,7 +63,7 @@ export default function SelectImage() {
                 <img
                   src={image.thumbnail}
                   alt={image.name}
-                  className="object-cover w-full h-[85%] rounded-sm transition-transform duration-300 transform hover:scale-105"
+                  className="object-cover w-full rounded-sm transition-transform duration-300 transform hover:scale-105"
                 />
 
                 <div className="py-1 text-sm text-primary font-bold">

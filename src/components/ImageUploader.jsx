@@ -110,14 +110,18 @@ const ImageUploader = ({
           <p className="text-sm text-text-secondary">
             {uploaded ? "Uploaded" : `Uploading ...`}
           </p>
-          <div className=" flex items-center gap-3 mt-2 px-2 py-1 border border-primary rounded-lg bg-secondary ">
+          <div className="w-full flex items-center gap-3 mt-2 px-2 py-1 border border-primary rounded-lg bg-secondary ">
             <img
               src={URL.createObjectURL(file)}
               alt="Preview"
               className="w-12 h-12 rounded object-cover"
             />
-            <div className="flex-1">
-              <p className="text-sm text-text-primary ">{file.name}</p>
+            <div className="flex-1 w-[60%] overflow-clip">
+              <p className="text-sm text-text-primary">
+                {file.name.length > 22
+                  ? file.name.slice(0, 22) + "..."
+                  : file.name}
+              </p>
               {!uploaded && (
                 <div className="w-full bg-background h-1 rounded mt-1">
                   <div
