@@ -4,7 +4,8 @@ import { Trash2, UploadCloud } from "lucide-react";
 const ImageUploader = ({
   onUpload = (selectedFile) => {},
   acceptedFormats = ["image/jpeg", "image/png", "image/gif"],
-  maxFileSizeInMB = 5 * 1024 * 1024, // 5 MB
+  maxFileSizeInMB = 5 * 1024 * 1024, // 5 MB,
+  showTitleandBorder = true,
 }) => {
   const [file, setFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -69,9 +70,11 @@ const ImageUploader = ({
 
   return (
     <div className="w-full mx-auto p-5 bg-white  rounded-2xl shadow-lg border border-primary flex flex-col items-center justify-center">
-      <h2 className="text-lg font-semibold text-center text-text-primary">
-        Upload Your Image
-      </h2>
+      {showTitleandBorder && (
+        <h2 className="text-lg font-semibold text-center text-text-primary">
+          Upload Your Image
+        </h2>
+      )}
 
       {/* Drag & Drop Area */}
       <div

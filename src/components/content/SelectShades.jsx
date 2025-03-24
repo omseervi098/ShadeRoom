@@ -1,4 +1,4 @@
-import { SwatchBook, PaintRoller, Crop } from "lucide-react";
+import { SwatchBook, PaintRoller, Crop, PaintBucket } from "lucide-react";
 import RecommendedColors from "../../assets/select_shades_recommended_colors.png";
 import RecommendedTextures from "../../assets/select_shades_recommended_textures.png";
 import SelectFromColorPalette from "../../assets/select_shades_select_from_color_palette.png";
@@ -7,28 +7,30 @@ import ExtractColorsFromImage from "../../assets/select_shades_extract_colors_fr
 import { useGeneral } from "../../hooks/general/generalContext.js";
 import ImageUploader from "../ImageUploader.jsx";
 import ImageCropper from "../ImageCropper.jsx";
+import { useEditor } from "../../hooks/editor/editorContext.js";
+import ImageColorsExtractor from "../ImageColorsExtractor.jsx";
 
 export default function SelectShades() {
-  const { openModal } = useGeneral();
-  const handleTextureUpload = (image) => {
+  const { openModal, closeModal } = useGeneral();
+  const { addTexture, shades, updateColors } = useEditor();
+  const handleTextureUpload = (textureFile) => {
     // Handle the uploaded texture file here
-    let croppedImage = null;
-    console.log(image);
-    console.log("Uploaded texture file:", image);
+    let croppedTexture = null;
+    console.log("Uploaded texture:", textureFile);
     openModal({
       title: {
         header: "Rotate or Crop Your Texture",
-        subHeader: "Rotate or crop your texture to fit the model.",
+        subHeader: "Crop your texture to maintain 1:1 aspect ratio.",
         icon: <Crop className="w-5 h-5" />,
         allowClose: true,
       },
       content: (
         <ImageCropper
-          imageSrc={URL.createObjectURL(image)}
-          aspect={4 / 3}
+          imageSrc={URL.createObjectURL(textureFile)}
+          aspect={1}
           onCropComplete={(image) => {
-            console.log("callback from ImageCropper", image);
-            croppedImage = image;
+            console.log("callback from ImageCropper for texture", image);
+            croppedTexture = image;
           }}
         />
       ),
@@ -36,8 +38,10 @@ export default function SelectShades() {
         {
           label: "Crop & Confirm",
           onClick: () => {
-            if (croppedImage) {
-              console.log("croppedImage", croppedImage);
+            if (croppedTexture) {
+              console.log("croppedImage", croppedTexture);
+              addTexture(croppedTexture);
+              closeModal();
             } else {
               console.error("cropped image not found");
             }
@@ -47,28 +51,72 @@ export default function SelectShades() {
     });
   };
   const onClickUploadTexture = () => {
+    console.log("Click Upload Texture");
     openModal({
       title: {
-        header: "upload your own texture",
-        subHeader: "ensure good quality texture",
+        header: "Upload your own Texture",
+        subHeader:
+          "Ensure your texture tile is high-quality for the best results.",
         icon: <PaintRoller className="w-5 h-5" />,
         allowClose: true,
       },
       content: (
         <ImageUploader
-          maxFileSizeInMB={5}
+          maxFileSizeInMB={2}
           acceptedFileTypes={["image/jpeg", "image/png", "image/webp"]}
           onUpload={handleTextureUpload}
+          showTitleandBorder={false}
+        />
+      ),
+    });
+  };
+  const handleExtractColorsFromImage = (imageFile) => {
+    let selectedColorsFromImage = [];
+    console.log("Uploaded Image to extract Colors", imageFile);
+    openModal({
+      title: {
+        header: "Extract Colors from Image",
+        subHeader: "Choose from the colors extracted from the image",
+        icon: <PaintBucket className="w-5 h-5" />,
+        allowClose: true,
+      },
+      content: (
+        <ImageColorsExtractor
+          imageSrc={URL.createObjectURL(imageFile)}
+          onUpdate={(selectedColors) => {
+            selectedColorsFromImage = selectedColors;
+          }}
         />
       ),
       action: [
         {
-          label: "Next",
+          label: "Confirm",
           onClick: () => {
-            console.log("Next");
+            console.log("confirm clicked", selectedColorsFromImage);
+            updateColors(selectedColorsFromImage);
+            closeModal();
           },
         },
       ],
+    });
+  };
+  const onClickExtractColorsFromImage = () => {
+    console.log("Clicked ExtractColorsFromImage");
+    openModal({
+      title: {
+        header: "Upload Image to Extract Colors",
+        subHeader: "Ensure your Image have best quality for the best results.",
+        icon: <PaintRoller className="w-5 h-5" />,
+        allowClose: true,
+      },
+      content: (
+        <ImageUploader
+          maxFileSizeInMB={2}
+          acceptedFileTypes={["image/jpeg", "image/png", "image/webp"]}
+          onUpload={handleExtractColorsFromImage}
+          showTitleandBorder={false}
+        />
+      ),
     });
   };
   return (
@@ -80,7 +128,7 @@ export default function SelectShades() {
         <button className="mr-2 text-sm font-bold flex items-center relative cursor-pointer">
           <SwatchBook className="w-8 h-8 text-primary bg-secondary rounded p-1" />
           <span className="absolute -top-1 -right-2 bg-primary text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-            5
+            {shades.textures.length + shades.colors.length}
           </span>
         </button>
       </div>
@@ -89,7 +137,10 @@ export default function SelectShades() {
           Select Color Shades
         </h2>
         <div className="md:px-10 grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-10 mt-3">
-          <div className="bg-secondary rounded-xl shadow-md text-center overflow-hidden cursor-pointer">
+          <div
+            className="bg-secondary rounded-xl shadow-md text-center overflow-hidden cursor-pointer"
+            onClick={onClickExtractColorsFromImage}
+          >
             <img
               src={`${ExtractColorsFromImage}`}
               alt="Extract Colors"

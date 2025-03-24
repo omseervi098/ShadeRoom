@@ -9,8 +9,8 @@ export default function Modal() {
     action,
   } = modal;
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-primary-50 z-50">
-      <div className="bg-text-tertiary rounded-lg shadow-lg p-3 w-full sm:w-2/3 xl:w-1/2 flex flex-col gap-3">
+    <div className="fixed inset-0 flex items-center justify-center bg-primary-50 z-50 ">
+      <div className="bg-text-tertiary rounded-lg shadow-lg p-3 w-full md:w-2/3 xl:w-1/2 flex flex-col gap-3 max-h-screen overflow-auto ">
         <div className="flex justify-between items-center ">
           <div className="w-full flex items-center gap-3">
             <div className="rounded-md p-2 border border-primary">{icon}</div>
@@ -31,25 +31,24 @@ export default function Modal() {
           )}
         </div>
 
-        <div className="flex items-center justify-between max-h-80 overflow-y-auto">
-          {content}
-        </div>
+        <div className="flex items-center justify-between ">{content}</div>
         <div className="flex justify-end gap-2">
-          {action.map((btn, index) => (
-            <button
-              key={index}
-              className={`
+          {action &&
+            action.map((btn, index) => (
+              <button
+                key={index}
+                className={`
               ${
                 index === action.length - 1
                   ? "bg-primary" + " hover:bg-primary/80"
                   : "bg-text-secondary" + " hover:bg-text-secondary/80"
               }
               text-text-tertiary font-bold py-1 px-4 rounded-md transition duration-300 ease-in-out`}
-              onClick={btn.onClick}
-            >
-              {btn.label}
-            </button>
-          ))}
+                onClick={btn.onClick}
+              >
+                {btn.label}
+              </button>
+            ))}
         </div>
       </div>
     </div>

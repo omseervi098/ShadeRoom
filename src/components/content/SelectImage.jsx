@@ -11,12 +11,11 @@ export default function SelectImage() {
   const { image: globalimage, updateImage } = useEditor();
   const handleUpload = (image) => {
     let croppedImage = null;
-    console.log(image);
-    console.log("Image uploaded");
+    console.log("Image Uploaded", image);
     openModal({
       title: {
-        header: "Rotate or Crop Your Texture",
-        subHeader: "Rotate or crop your texture to fit the model.",
+        header: "Rotate or Crop Your Image",
+        subHeader: "crop the image to maintain a 4:3 aspect ratio.",
         icon: <Crop className="w-5 h-5" />,
         allowClose: true,
       },
@@ -37,7 +36,9 @@ export default function SelectImage() {
             if (croppedImage) {
               console.log("croppedImage", croppedImage);
               updateImage(croppedImage);
+              console.log("going to next step ..");
               handleNext(croppedImage);
+              console.log("closing modal..");
               closeModal();
             } else {
               console.error("cropped image not found");
