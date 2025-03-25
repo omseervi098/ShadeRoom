@@ -1,5 +1,11 @@
-import { SwatchBook, PaintRoller, Crop, PaintBucket } from "lucide-react";
-import RecommendedColors from "../../assets/select_shades_recommended_colors.png";
+import {
+  SwatchBook,
+  PaintRoller,
+  Crop,
+  PaintBucket,
+  Palette,
+} from "lucide-react";
+import RecommendedColorsThumbnail from "../../assets/select_shades_recommended_colors.png";
 import RecommendedTextures from "../../assets/select_shades_recommended_textures.png";
 import SelectFromColorPalette from "../../assets/select_shades_select_from_color_palette.png";
 import UploadOwnTexture from "../../assets/select_shades_upload_own_texture.png";
@@ -9,7 +15,8 @@ import ImageUploader from "../ImageUploader.jsx";
 import ImageCropper from "../ImageCropper.jsx";
 import { useEditor } from "../../hooks/editor/editorContext.js";
 import ImageColorsExtractor from "../ImageColorsExtractor.jsx";
-
+import SelectColorsFromPalette from "../selectFromPalette.jsx";
+import RecommendedColors from "../RecommendedColors.jsx";
 export default function SelectShades() {
   const { openModal, closeModal } = useGeneral();
   const { addTexture, shades, updateColors } = useEditor();
@@ -98,6 +105,7 @@ export default function SelectShades() {
           },
         },
       ],
+      allowFlexibleWidth: true,
     });
   };
   const onClickExtractColorsFromImage = () => {
@@ -117,6 +125,56 @@ export default function SelectShades() {
           showTitleandBorder={false}
         />
       ),
+    });
+  };
+  const onClickSelectColorsFromPalette = () => {
+    let selectedColorsFromPalette = [];
+    console.log("Clicked SelectColorsFromPalette");
+    openModal({
+      title: {
+        header: "Choose Colors from Palette",
+        subHeader: "Add colors from color palette",
+        icon: <Palette className="w-5 h-5" />,
+        allowClose: true,
+      },
+      content: (
+        <SelectColorsFromPalette
+          onUpdate={(selectedColors) => {
+            selectedColorsFromPalette = selectedColors;
+          }}
+        />
+      ),
+      action: [
+        {
+          label: "Confirm",
+          onClick: () => {
+            console.log("confirm clicked");
+            updateColors(selectedColorsFromPalette);
+          },
+        },
+      ],
+      allowFlexibleWidth: true,
+    });
+  };
+  const onClickRecommendedColors = () => {
+    console.log("Clicked Recommended Colors");
+    openModal({
+      title: {
+        header: "Recommended Colors",
+        subHeader: "Recommended Colors from Recommended Colors",
+        icon: <SwatchBook className="w-5 h-5" />,
+        allowClose: true,
+      },
+      content: <RecommendedColors />,
+      action: [
+        {
+          label: "Confirm",
+          onClick: () => {
+            console.log("recommended clicked");
+          },
+        },
+      ],
+      allowFlexibleWidth: true,
     });
   };
   return (
@@ -150,7 +208,10 @@ export default function SelectShades() {
               Extract Colors from Image
             </p>
           </div>
-          <div className="bg-secondary rounded-xl shadow-md text-center overflow-hidden cursor-pointer">
+          <div
+            className="bg-secondary rounded-xl shadow-md text-center overflow-hidden cursor-pointer"
+            onClick={onClickSelectColorsFromPalette}
+          >
             <img
               src={`${SelectFromColorPalette}`}
               alt="Select from Color Palette"
@@ -160,9 +221,12 @@ export default function SelectShades() {
               Select from Color Palette
             </p>
           </div>
-          <div className="bg-secondary rounded-xl shadow-md text-center overflow-hidden cursor-pointer">
+          <div
+            className="bg-secondary rounded-xl shadow-md text-center overflow-hidden cursor-pointer"
+            onClick={onClickRecommendedColors}
+          >
             <img
-              src={`${RecommendedColors}`}
+              src={`${RecommendedColorsThumbnail}`}
               alt="Recommended Colors"
               className="rounded-t-lg object-cover transition-transform duration-300 transform hover:scale-105 hover:opacity-80"
             />

@@ -7,24 +7,27 @@ export default function Modal() {
     title: { header, subHeader, icon, allowClose },
     content,
     action,
+    allowFlexibleWidth,
   } = modal;
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-primary-50 z-50 ">
-      <div className="bg-text-tertiary rounded-lg shadow-lg p-3 w-full md:w-2/3 xl:w-1/2 flex flex-col gap-3 max-h-screen overflow-auto ">
+      <div
+        className={`bg-text-tertiary rounded-lg shadow-lg p-3 w-full ${allowFlexibleWidth ? "sm:w-max" : "sm:w-[90%] md:w-2/3 xl:w-1/2"} flex flex-col gap-3 max-h-screen overflow-auto `}
+      >
         <div className="flex justify-between items-center ">
           <div className="w-full flex items-center gap-3">
             <div className="rounded-md p-2 border border-primary">{icon}</div>
-            <div className=" text-gray-500">
+            <div className=" text-text-primary">
               <h2 className="text-md font-semibold">{header}</h2>
               {subHeader && (
-                <p className="text-xs text-gray-400">{subHeader}</p>
+                <p className="text-xs text-text-secondary">{subHeader}</p>
               )}
             </div>
           </div>
           {allowClose && (
             <button
               onClick={closeModal}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-text-secondary hover:text-text-secondary/80 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -43,7 +46,7 @@ export default function Modal() {
                   ? "bg-primary" + " hover:bg-primary/80"
                   : "bg-text-secondary" + " hover:bg-text-secondary/80"
               }
-              text-text-tertiary font-bold py-1 px-4 rounded-md transition duration-300 ease-in-out`}
+              text-text-tertiary font-bold py-1 px-4 rounded-md transition duration-300 ease-in-out cursor-pointer`}
                 onClick={btn.onClick}
               >
                 {btn.label}

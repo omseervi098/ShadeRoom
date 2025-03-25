@@ -22,9 +22,15 @@ export const GeneralProvider = ({ children }) => {
         onClick: null,
       },
     ],
+    allowFlexibleWidth: false,
   });
 
-  const openModal = ({ title, content, action }) => {
+  const openModal = ({
+    title,
+    content,
+    action,
+    allowFlexibleWidth = false,
+  }) => {
     if (isModalOpen) {
       console.error("Modal is already open");
       return;
@@ -34,7 +40,8 @@ export const GeneralProvider = ({ children }) => {
     if (
       modal.title === title &&
       modal.content === content &&
-      modal.action === action
+      modal.action === action &&
+      modal.allowFlexibleWidth === allowFlexibleWidth
     ) {
       setIsModalOpen(true);
       console.log("Modal opens with the same state");
@@ -46,6 +53,7 @@ export const GeneralProvider = ({ children }) => {
       title: title,
       content: content,
       action: action,
+      allowFlexibleWidth: allowFlexibleWidth,
     });
     setIsModalOpen(true);
   };
