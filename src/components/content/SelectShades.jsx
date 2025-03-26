@@ -6,7 +6,7 @@ import {
   Palette,
 } from "lucide-react";
 import RecommendedColorsThumbnail from "../../assets/select_shades_recommended_colors.png";
-import RecommendedTextures from "../../assets/select_shades_recommended_textures.png";
+import RecommendedTexturesThumbnail from "../../assets/select_shades_recommended_textures.png";
 import SelectFromColorPalette from "../../assets/select_shades_select_from_color_palette.png";
 import UploadOwnTexture from "../../assets/select_shades_upload_own_texture.png";
 import ExtractColorsFromImage from "../../assets/select_shades_extract_colors_from_image.png";
@@ -17,9 +17,11 @@ import { useEditor } from "../../hooks/editor/editorContext.js";
 import ImageColorsExtractor from "../ImageColorsExtractor.jsx";
 import SelectColorsFromPalette from "../selectFromPalette.jsx";
 import RecommendedColors from "../RecommendedColors.jsx";
+import RecommendedTextures from "../RecommendedTextures.jsx";
+import ViewShades from "../ViewShades.jsx";
 export default function SelectShades() {
   const { openModal, closeModal } = useGeneral();
-  const { addTexture, shades, updateColors } = useEditor();
+  const { addTextures, shades, updateColors } = useEditor();
   const handleTextureUpload = (textureFile) => {
     // Handle the uploaded texture file here
     let croppedTexture = null;
@@ -47,7 +49,12 @@ export default function SelectShades() {
           onClick: () => {
             if (croppedTexture) {
               console.log("croppedImage", croppedTexture);
-              addTexture(croppedTexture);
+              addTextures([
+                {
+                  id: 1231,
+                  url: croppedTexture,
+                },
+              ]);
               closeModal();
             } else {
               console.error("cropped image not found");
@@ -157,23 +164,84 @@ export default function SelectShades() {
     });
   };
   const onClickRecommendedColors = () => {
+    let selectedTilesFromRecommended = [];
     console.log("Clicked Recommended Colors");
     openModal({
       title: {
         header: "Recommended Colors",
-        subHeader: "Recommended Colors from Recommended Colors",
+        subHeader: "Choose from our suggested color sets",
         icon: <SwatchBook className="w-5 h-5" />,
         allowClose: true,
       },
-      content: <RecommendedColors />,
+      content: (
+        <RecommendedColors
+          onUpdate={(selectedTiles) => {
+            selectedTilesFromRecommended = selectedTiles;
+          }}
+        />
+      ),
       action: [
         {
           label: "Confirm",
           onClick: () => {
             console.log("recommended clicked");
+            // get all colors from tiles
+            const colorsList = selectedTilesFromRecommended
+              .map((tile) => tile.colors)
+              .flat();
+            console.log(
+              "Recommended Colors from recommended colors",
+              colorsList,
+            );
+            updateColors(colorsList);
+            closeModal();
           },
         },
       ],
+      allowFlexibleWidth: true,
+    });
+  };
+  const onClickRecommendedTextures = () => {
+    let selectedTexturesFromRecommended = [];
+    console.log("Clicked Recommended Textures");
+    openModal({
+      title: {
+        header: "Recommended Textures",
+        subHeader: "Chose from our suggested textures",
+        icon: <SwatchBook className="w-5 h-5" />,
+        allowClose: true,
+      },
+      content: (
+        <RecommendedTextures
+          onUpdate={(selectedTextures) => {
+            selectedTexturesFromRecommended = selectedTextures;
+          }}
+        />
+      ),
+      action: [
+        {
+          label: "Confirm",
+          onClick: async () => {
+            console.log("recommended clicked");
+            console.log(selectedTexturesFromRecommended);
+            await addTextures(selectedTexturesFromRecommended);
+            closeModal();
+          },
+        },
+      ],
+      allowFlexibleWidth: true,
+    });
+  };
+  const onClickViewShades = () => {
+    console.log("Clicked Recommended Textures");
+    openModal({
+      title: {
+        header: "All Shades",
+        subHeader: "selected shades colors and textures both",
+        icon: <SwatchBook className="w-5 h-5" />,
+        allowClose: true,
+      },
+      content: <ViewShades />,
       allowFlexibleWidth: true,
     });
   };
@@ -183,7 +251,10 @@ export default function SelectShades() {
         <h1 className="text-xl text-primary font-bold">
           Select Shades for Room
         </h1>
-        <button className="mr-2 text-sm font-bold flex items-center relative cursor-pointer">
+        <button
+          className="mr-2 text-sm font-bold flex items-center relative cursor-pointer"
+          onClick={onClickViewShades}
+        >
           <SwatchBook className="w-8 h-8 text-primary bg-secondary rounded p-1" />
           <span className="absolute -top-1 -right-2 bg-primary text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
             {shades.textures.length + shades.colors.length}
@@ -241,9 +312,12 @@ export default function SelectShades() {
           Select Texture Shades
         </h2>
         <div className="md:px-10 grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-10 mt-3">
-          <div className="bg-secondary rounded-xl shadow-md text-center overflow-hidden cursor-pointer">
+          <div
+            className="bg-secondary rounded-xl shadow-md text-center overflow-hidden cursor-pointer"
+            onClick={onClickRecommendedTextures}
+          >
             <img
-              src={`${RecommendedTextures}`}
+              src={`${RecommendedTexturesThumbnail}`}
               alt="Recommended Textures"
               className="rounded-t-lg object-cover transition-transform duration-300 transform hover:scale-105 hover:opacity-80"
             />

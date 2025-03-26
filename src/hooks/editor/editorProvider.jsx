@@ -17,11 +17,11 @@ export const EditorProvider = ({ children }) => {
     });
   };
 
-  const addTexture = (newTexture) => {
-    setShades({
-      colors: shades.colors,
-      textures: [...shades.textures, newTexture],
-    });
+  const addTextures = (newTextures) => {
+    setShades((prevShades) => ({
+      colors: prevShades.colors,
+      textures: [...prevShades.textures, ...newTextures], // Add all textures at once
+    }));
   };
 
   return (
@@ -30,7 +30,7 @@ export const EditorProvider = ({ children }) => {
         image,
         shades,
         updateColors,
-        addTexture,
+        addTextures,
         updateImage,
       }}
     >
