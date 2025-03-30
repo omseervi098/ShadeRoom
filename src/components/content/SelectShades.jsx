@@ -21,7 +21,7 @@ import RecommendedTextures from "../RecommendedTextures.jsx";
 import ViewShades from "../ViewShades.jsx";
 export default function SelectShades() {
   const { openModal, closeModal } = useGeneral();
-  const { addTextures, shades, updateColors } = useEditor();
+  const { addTextures, shades, addColors } = useEditor();
   const handleTextureUpload = (textureFile) => {
     // Handle the uploaded texture file here
     let croppedTexture = null;
@@ -107,7 +107,7 @@ export default function SelectShades() {
           label: "Confirm",
           onClick: () => {
             console.log("confirm clicked", selectedColorsFromImage);
-            updateColors(selectedColorsFromImage);
+            addColors(selectedColorsFromImage);
             closeModal();
           },
         },
@@ -156,7 +156,8 @@ export default function SelectShades() {
           label: "Confirm",
           onClick: () => {
             console.log("confirm clicked");
-            updateColors(selectedColorsFromPalette);
+            addColors(selectedColorsFromPalette);
+            closeModal();
           },
         },
       ],
@@ -193,7 +194,7 @@ export default function SelectShades() {
               "Recommended Colors from recommended colors",
               colorsList,
             );
-            updateColors(colorsList);
+            addColors(colorsList);
             closeModal();
           },
         },

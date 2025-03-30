@@ -1,5 +1,5 @@
 import { EditorContext } from "./editorContext.js";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export const EditorProvider = ({ children }) => {
   const [image, setImage] = useState(null);
@@ -10,17 +10,44 @@ export const EditorProvider = ({ children }) => {
   const updateImage = (image) => {
     setImage(image);
   };
-  const updateColors = (colors) => {
-    setShades({
-      ...shades,
-      colors: colors,
+
+  const updateShades = useCallback(
+    (update) => {
+      setShades((prevShades) => ({
+        ...prevShades,
+        ...update(prevShades),
+      }));
+    },
+    [setShades],
+  );
+
+  const addColors = (newColors) => {
+    updateShades((prev) => {
+      const existingHexSet = new Set(prev.colors.map((color) => color.hex));
+      const uniqueNewColors = newColors.filter(
+        (color) => !existingHexSet.has(color.hex),
+      );
+      return { colors: [...prev.colors, ...uniqueNewColors] };
     });
   };
 
+  const removeColor = (colorToRemove) => {
+    updateShades((prev) => ({
+      colors: prev.colors.filter((color) => color.hex !== colorToRemove.hex),
+    }));
+  };
+
   const addTextures = (newTextures) => {
-    setShades((prevShades) => ({
-      colors: prevShades.colors,
-      textures: [...prevShades.textures, ...newTextures], // Add all textures at once
+    updateShades((prev) => ({
+      textures: [...prev.textures, ...newTextures],
+    }));
+  };
+
+  const removeTexture = (textureToRemove) => {
+    updateShades((prev) => ({
+      textures: prev.textures.filter(
+        (texture) => texture.id !== textureToRemove.id,
+      ),
     }));
   };
 
@@ -29,7 +56,9 @@ export const EditorProvider = ({ children }) => {
       value={{
         image,
         shades,
-        updateColors,
+        addColors,
+        removeColor,
+        removeTexture,
         addTextures,
         updateImage,
       }}
