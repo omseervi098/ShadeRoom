@@ -14,8 +14,15 @@ import CanvasImage from "../CanvasImage.jsx";
 import { ImageEditor } from "../ImageEditor.jsx";
 
 export default function ShadeRoom({ modelSession }) {
-  const { image, clicks, scale, embedding, embeddingStatus, setMaskImage } =
-    useEditor();
+  const {
+    image,
+    clicks,
+    scale,
+    embedding,
+    embeddingStatus,
+    setMaskImage,
+    selectedShade,
+  } = useEditor();
   const { goToStep } = useStepper();
   const runONNX = async () => {
     try {
@@ -27,28 +34,21 @@ export default function ShadeRoom({ modelSession }) {
       )
         return null;
       else {
-        // Preapre the model input in the correct format for SAM.
-        // The modelData function is from onnxModelAPI.tsx.
         const feeds = transformDataForModel({
           clicks,
           embedding,
           modelScale: scale,
         });
         if (feeds === undefined) return;
-        // Run the SAM ONNX model with the feeds returned from modelData()
 
         const results = await modelSession.run(feeds);
         const output = results[modelSession.outputNames[0]];
 
-        // The predicted mask returned from the ONNX model is an array which is
-        // rendered as an HTML image using onnxMaskToImage() from
-        // maskUtils.tsx.
         const maskImage = onnxMaskToImage(
           output.data,
           output.dims[3],
           output.dims[2],
         );
-
         setMaskImage(maskImage);
       }
     } catch (e) {

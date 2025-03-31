@@ -27,8 +27,13 @@ export const convertURLtoFile = async (url, filename) => {
     });
 };
 
-export const arrayToImageData = (input, height, width) => {
-  const [r, g, b, a] = [0, 0, 255, 100]; // the masks's blue color
+export const arrayToImageData = (
+  input,
+  height,
+  width,
+  maskColor = [0, 0, 255, 100],
+) => {
+  const [r, g, b, a] = maskColor;
   const arr = new Uint8ClampedArray(4 * width * height).fill(0);
   for (let i = 0; i < input.length; i++) {
     // Threshold the onnx model mask prediction at 0.0
@@ -59,6 +64,7 @@ export const imageDataToCanvas = (imageData) => {
   return canvas;
 };
 
-export function onnxMaskToImage(input, height, width) {
-  return imageDataToImage(arrayToImageData(input, height, width));
-}
+export const onnxMaskToImage = (input, height, width, maskColor) => {
+  maskColor = [0, 0, 255, 100];
+  return imageDataToImage(arrayToImageData(input, height, width, maskColor));
+};

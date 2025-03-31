@@ -76,3 +76,9 @@ export const hexToRgb = (hex) => {
     throw new Error("Invalid HEX color format");
   }
 };
+export const rgbStrToRgbaArray = (rgb, alpha = 1) => {
+  const match = rgb.match(/\d+/g);
+  if (!match || match.length < 3) return null;
+  const [r, g, b] = match.map(Number);
+  return [r, g, b, alpha];
+};

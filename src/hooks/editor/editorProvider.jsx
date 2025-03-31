@@ -11,6 +11,7 @@ export const EditorProvider = ({ children }) => {
     textures: [],
     colors: [],
   }); //Shades consist of textures, colors
+  const [selectedShade, setSelectedShade] = useState(null);
   const [scale, setScale] = useState({
     width: null,
     height: null,
@@ -105,6 +106,8 @@ export const EditorProvider = ({ children }) => {
         image,
         embedding,
         shades,
+        selectedShade,
+        setSelectedShade,
         scale,
         embeddingStatus,
         addColors,

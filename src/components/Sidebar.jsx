@@ -7,10 +7,11 @@ import {
   Grid,
   Droplet,
 } from "lucide-react";
+import { useEditor } from "../hooks/editor/editorContext.js";
 
 export default function Sidebar({ colors, textures }) {
+  const { selectedShade, setSelectedShade } = useEditor();
   const [activeTab, setActiveTab] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
 
   const toggleTab = (tab) => {
     setActiveTab(activeTab === tab ? null : tab);
@@ -71,17 +72,17 @@ export default function Sidebar({ colors, textures }) {
         </button>
 
         <div className="hidden w-10 md:w-full bg-secondary rounded-md  overflow-hidden md:flex items-center justify-center gap-2 h-10  ">
-          {selectedItem ? (
-            selectedItem.url ? (
+          {selectedShade ? (
+            selectedShade.url ? (
               <img
-                src={selectedItem.url}
-                alt={`texture_${selectedItem.id}.jpg`}
+                src={selectedShade.url}
+                alt={`texture_${selectedShade.id}.jpg`}
                 className="w-full h-full object-cover"
               />
             ) : (
               <div
                 className="w-full h-full object-cover"
-                style={{ background: selectedItem.hex }}
+                style={{ background: selectedShade.hex }}
               />
             )
           ) : (
@@ -98,13 +99,13 @@ export default function Sidebar({ colors, textures }) {
           className={`scrollbar-hide absolute md:left-16 lg:left-30 top-0 h-16 md:h-full rounded-r-md md:bg-secondary transition-transform duration-400 ${activeTab === "textures" ? "translate-x-0" : "-translate-x-full"} w-full md:w-16 lg:w-20 overflow-x-auto overflow-y-hidden md:overflow-x-hidden md:overflow-y-auto py-2 px-2 md:px-0`}
         >
           <div className="w-max mx-auto flex md:flex-col items-center space-x-2 md:space-x-0 md:space-y-1 ">
-            {/* Example Textures */}
             {textures &&
               textures.length > 0 &&
               textures.map((texture, index) => (
                 <div
+                  key={index}
                   className="w-14 h-10 rounded-md bg-gray-500 overflow-hidden cursor-pointer hover:opacity-60"
-                  onClick={() => setSelectedItem(texture)}
+                  onClick={() => setSelectedShade(texture)}
                 >
                   <img
                     src={texture.url}
@@ -122,15 +123,17 @@ export default function Sidebar({ colors, textures }) {
         >
           <div className="w-max mx-auto flex md:flex-col items-center space-x-2 md:space-x-0 md:space-y-1 ">
             {colors &&
-              colors.length > 0 &&
-              colors.map((color, index) => (
-                <div
-                  key={index}
-                  className="min-w-14 h-10 rounded-md cursor-pointer border border-primary"
-                  style={{ background: color.hex }}
-                  onClick={() => setSelectedItem(color)}
-                ></div>
-              ))}
+              colors.map((color, index) => {
+                console.log(color);
+                return (
+                  <div
+                    key={index}
+                    className="min-w-14 h-10 rounded-md cursor-pointer border border-primary"
+                    style={{ background: color.hex }}
+                    onClick={() => setSelectedShade(color)}
+                  />
+                );
+              })}
           </div>
         </div>
       )}

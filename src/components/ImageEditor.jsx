@@ -4,9 +4,9 @@ import { useEditor } from "../hooks/editor/editorContext.js";
 export function ImageEditor() {
   const { shades } = useEditor();
   return (
-    <div className="w-full h-full flex flex-col md:flex-row justify-between">
+    <div className="w-full h-full flex flex-col-reverse md:flex-row justify-between">
       {/*  SideBar */}
-      <div className="hidden md:block w-32">
+      <div className="h-32 md:h-auto w-full md:w-32">
         <Sidebar colors={shades.colors} textures={shades.textures} />
       </div>
 
@@ -15,9 +15,6 @@ export function ImageEditor() {
         <div className="max-w-[100%] lg:max-w-[80%] ">
           <CanvasImage />
         </div>
-      </div>
-      <div className="block md:hidden w-full h-32">
-        <Sidebar />
       </div>
     </div>
   );

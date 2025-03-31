@@ -18,7 +18,7 @@ export default function CanvasImage() {
     y *= imageScale;
     const click = getClick(x, y);
     if (click) setClicks([click]);
-  }, 10);
+  }, 5);
 
   const [shouldFitToWidth, setShouldFitToWidth] = useState(true);
   const bodyEl = document.body;
