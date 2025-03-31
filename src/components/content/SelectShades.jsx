@@ -247,7 +247,7 @@ export default function SelectShades() {
     });
   };
   return (
-    <div className="flex flex-col justify-center w-full px-3 md:px-5 py-1">
+    <div className="flex flex-col justify-center w-full px-3 md:px-5  py-2 md:py-5">
       <div className="flex justify-between items-center">
         <h1 className="text-xl text-primary font-bold">
           Select Shades for Room

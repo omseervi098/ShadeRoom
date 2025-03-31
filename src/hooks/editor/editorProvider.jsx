@@ -1,22 +1,66 @@
 import { EditorContext } from "./editorContext.js";
-import { useState, useCallback } from "react";
+import { getImageEmbedding } from "../../utils/modelHelpers.js";
+import { useState, useCallback, useEffect } from "react";
 
 export const EditorProvider = ({ children }) => {
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState(null); // HTMLImageElement of Main Image
+  const [clicks, setClicks] = useState([]);
+  const [maskImage, setMaskImage] = useState(null);
+  const [error, setError] = useState(null);
   const [shades, setShades] = useState({
     textures: [],
     colors: [],
-  });
+  }); //Shades consist of textures, colors
+  const [scale, setScale] = useState({
+    width: null,
+    height: null,
+    modelScale: null,
+  }); //scale for onnx model
+  const [embedding, setEmbedding] = useState(null); //embeddings
+  const [embeddingStatus, setEmbeddingStatus] = useState(""); //status for
+  // embedding
+
+  useEffect(() => {
+    if (image) {
+      setEmbeddingStatus("loading");
+      getImageEmbedding(image)
+        .then((embedding) => {
+          console.log("Embedding loaded", embedding);
+          setEmbedding(embedding);
+          setEmbeddingStatus("loaded");
+        })
+        .catch((error) => {
+          console.error(error);
+          setEmbeddingStatus("error");
+        });
+    }
+  }, [image]);
+
   const updateImage = (image) => {
     setImage(image);
   };
 
+  const updateScale = ({ width, height, modelScale }) => {
+    setScale({
+      width,
+      height,
+      modelScale,
+    });
+  };
+
   const updateShades = useCallback(
     (update) => {
-      setShades((prevShades) => ({
-        ...prevShades,
-        ...update(prevShades),
-      }));
+      setShades((prevShades) => {
+        if (!prevShades || !prevShades.colors || !prevShades.textures)
+          return {
+            colors: prevShades.colors,
+            textures: prevShades.textures,
+          };
+        return {
+          ...prevShades,
+          ...update(prevShades),
+        };
+      });
     },
     [setShades],
   );
@@ -54,11 +98,19 @@ export const EditorProvider = ({ children }) => {
   return (
     <EditorContext.Provider
       value={{
+        clicks,
+        setClicks,
+        maskImage,
+        setMaskImage,
         image,
+        embedding,
         shades,
+        scale,
+        embeddingStatus,
         addColors,
         removeColor,
         removeTexture,
+        updateScale,
         addTextures,
         updateImage,
       }}

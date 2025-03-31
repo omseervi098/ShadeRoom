@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Trash2, UploadCloud } from "lucide-react";
-
+import imageCompression from "browser-image-compression";
 const ImageUploader = ({
   onUpload = (selectedFile) => {},
   acceptedFormats = ["image/jpeg", "image/png", "image/gif"],
-  maxFileSizeInMB = 5 * 1024 * 1024, // 5 MB,
+  maxFileSizeInMB = 10 * 1024 * 1024, // 5 MB,
   showTitleandBorder = true,
 }) => {
   const [file, setFile] = useState(null);
@@ -25,25 +25,54 @@ const ImageUploader = ({
     return true;
   };
 
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
     const selectedFile = event.target.files[0];
     if (!validateFile(selectedFile)) return;
+    compressFile(selectedFile)
+      .then((compressedFile) => {
+        setFile(compressedFile);
+        setUploadProgress(0);
+        setUploaded(false);
+        simulateUpload(compressedFile);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
 
-    setFile(selectedFile);
-    setUploadProgress(0);
-    setUploaded(false);
-    simulateUpload(selectedFile);
+  const compressFile = async (file) => {
+    const options = {
+      maxSizeMB: 2,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+    };
+    // try {
+    //   const compressedFile = await imageCompression(file, options).then();
+    //   return new File([compressedFile], file.name, {
+    //     type: "image/jpeg",
+    //     lastModified: compressedFile.lastModified,
+    //   });
+    // } catch (error) {
+    //   console.log(error);
+    //   throw error;
+    // }
+    return file;
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
     const droppedFile = event.dataTransfer.files[0];
     if (!validateFile(droppedFile)) return;
-
-    setFile(droppedFile);
-    setUploadProgress(0);
-    setUploaded(false);
-    simulateUpload(droppedFile);
+    compressFile(droppedFile)
+      .then((compressedFile) => {
+        setFile(compressedFile);
+        setUploadProgress(0);
+        setUploaded(false);
+        simulateUpload(compressedFile);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
 
   const simulateUpload = (selectedFile) => {

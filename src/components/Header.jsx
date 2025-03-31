@@ -20,7 +20,7 @@ export default function Header() {
       <nav
         className={`${
           isNavbarOpen ? "flex justify-center" : "hidden"
-        } md:flex md:items-center md:justify-between w-full mt-4 md:mt-0`}
+        } md:flex md:items-center md:justify-end w-full mt-4 md:mt-0`}
       >
         <Stepper />
       </nav>
