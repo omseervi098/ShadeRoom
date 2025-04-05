@@ -6,11 +6,15 @@ import {
   RotateCw,
   Grid,
   Droplet,
+  Mouse,
+  PenTool,
+  Lasso,
+  MousePointer,
 } from "lucide-react";
 import { useEditor } from "../hooks/editor/editorContext.js";
 
 export default function Sidebar({ colors, textures }) {
-  const { selectedShade, setSelectedShade } = useEditor();
+  const { selectedShade, setSelectedShade, setMode } = useEditor();
   const [activeTab, setActiveTab] = useState(null);
 
   const toggleTab = (tab) => {
@@ -24,7 +28,7 @@ export default function Sidebar({ colors, textures }) {
   };
 
   return (
-    <div className="w-full flex h-full flex-col-reverse md:flex-row relative ">
+    <div className="z-10 w-full flex h-full flex-col-reverse md:flex-row relative ">
       {/* Sidebar */}
       <div className="w-full h-16 md:h-auto md:w-16 lg:w-30 md:bg-primary text-primary flex md:flex-col items-center justify-center md:justify-start space-x-3 md:space-x-0 py-3 md:space-y-4 px-2">
         <button
@@ -70,7 +74,13 @@ export default function Sidebar({ colors, textures }) {
           <RotateCw size={22} />
           <span className="hidden lg:block font-semibold text-sm">Redo</span>
         </button>
-
+        <button
+          className="md:w-full bg-secondary rounded-full lg:rounded-md p-2 flex items-center justify-evenly gap-2 cursor-pointer hover:bg-secondary/70"
+          onClick={() => toggleTab("modes")}
+        >
+          <Mouse size={22} />
+          <span className="hidden lg:block font-semibold text-sm">Modes</span>
+        </button>
         <div className="hidden w-10 md:w-full bg-secondary rounded-md  overflow-hidden md:flex items-center justify-center gap-2 h-10  ">
           {selectedShade ? (
             selectedShade.url ? (
@@ -134,6 +144,32 @@ export default function Sidebar({ colors, textures }) {
                   />
                 );
               })}
+          </div>
+        </div>
+      )}
+      {activeTab === "modes" && (
+        <div
+          className={`scrollbar-hide absolute md:left-16 lg:left-30 top-0 h-16 md:h-full rounded-r-md md:bg-secondary transition-transform duration-400 ${activeTab === "modes" ? "translate-x-0" : "-translate-x-full"} w-full md:w-16 lg:w-20 overflow-x-auto overflow-y-hidden md:overflow-x-hidden md:overflow-y-auto py-2 px-2 md:px-0`}
+        >
+          <div className="w-max mx-auto text-white flex md:flex-col items-center space-x-2 md:space-x-0 md:space-y-3 ">
+            <button
+              className="md:w-full bg-primary rounded-full lg:rounded-md p-2 flex items-center justify-evenly gap-2 cursor-pointer hover:bg-primary/50"
+              onClick={() => setMode("hover")}
+            >
+              <MousePointer size={22} />
+            </button>
+            <button
+              className="md:w-full bg-primary rounded-full lg:rounded-md p-2 flex items-center justify-evenly gap-2 cursor-pointer hover:bg-primary/70"
+              onClick={() => setMode("polygon")}
+            >
+              <PenTool size={22} />
+            </button>
+            <button
+              className="md:w-full bg-primary rounded-full lg:rounded-md p-2 flex items-center justify-evenly gap-2 cursor-pointer hover:bg-primary/70"
+              onClick={() => setMode("lasso")}
+            >
+              <Lasso size={22} />
+            </button>
           </div>
         </div>
       )}

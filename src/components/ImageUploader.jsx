@@ -46,17 +46,16 @@ const ImageUploader = ({
       maxWidthOrHeight: 1920,
       useWebWorker: true,
     };
-    // try {
-    //   const compressedFile = await imageCompression(file, options).then();
-    //   return new File([compressedFile], file.name, {
-    //     type: "image/jpeg",
-    //     lastModified: compressedFile.lastModified,
-    //   });
-    // } catch (error) {
-    //   console.log(error);
-    //   throw error;
-    // }
-    return file;
+    try {
+      const compressedFile = await imageCompression(file, options).then();
+      return new File([compressedFile], file.name, {
+        type: "image/jpeg",
+        lastModified: compressedFile.lastModified,
+      });
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   };
 
   const handleDrop = (event) => {

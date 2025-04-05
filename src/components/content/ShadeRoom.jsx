@@ -61,7 +61,9 @@ export default function ShadeRoom({ modelSession }) {
     }
   }, [embeddingStatus]);
   useEffect(() => {
-    runONNX();
+    runONNX().then(() => {
+      console.log("Mask Image Generated");
+    });
   }, [clicks]);
   // console.log(LivingRoomThumbnail);
   return (

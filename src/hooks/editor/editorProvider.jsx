@@ -20,6 +20,7 @@ export const EditorProvider = ({ children }) => {
   const [embedding, setEmbedding] = useState(null); //embeddings
   const [embeddingStatus, setEmbeddingStatus] = useState(""); //status for
   // embedding
+  const [mode, setMode] = useState("hover");
 
   useEffect(() => {
     if (image) {
@@ -110,6 +111,8 @@ export const EditorProvider = ({ children }) => {
         setSelectedShade,
         scale,
         embeddingStatus,
+        mode,
+        setMode,
         addColors,
         removeColor,
         removeTexture,
