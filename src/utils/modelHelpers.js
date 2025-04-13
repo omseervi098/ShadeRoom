@@ -30,64 +30,68 @@ export const getImageEmbedding = async (imageElement) => {
     throw err;
   }
 };
-export const transformDataForModel = ({ clicks, embedding, modelScale }) => {
-  const imageEmbedding = embedding;
-  let pointCoords;
-  let pointLabels;
-  let pointCoordsTensor;
-  let pointLabelsTensor;
+export const transformDataForModel = ({
+  clicks,
+  embedding,
+  modelScale,
+  lastPredMask,
+  mode,
+}) => {
+  const feeds = {
+    image_embeddings: embedding,
+    orig_im_size: new Tensor("float32", [modelScale.height, modelScale.width]),
+  };
 
   // Check there are input click prompts
   if (clicks) {
+    let pointCoords;
+    let pointLabels;
+    let pointCoordsTensor;
+    let pointLabelsTensor;
     let n = clicks.length;
 
-    // If there is no box input, a single padding point with
-    // label -1 and coordinates (0.0, 0.0) should be concatenated
-    // so initialize the array to support (n + 1) points.
-    pointCoords = new Float32Array(2 * (n + 1));
-    pointLabels = new Float32Array(n + 1);
+    if (mode === "lasso") {
+      pointCoords = new Float32Array(2 * n);
+      pointLabels = new Float32Array(n);
+    } else {
+      pointCoords = new Float32Array(2 * (n + 1));
+      pointLabels = new Float32Array(n + 1);
+    }
 
-    // Add clicks and scale to what SAM expects
     for (let i = 0; i < n; i++) {
       pointCoords[2 * i] = clicks[i].x * modelScale.modelScale;
       pointCoords[2 * i + 1] = clicks[i].y * modelScale.modelScale;
       pointLabels[i] = clicks[i].type;
     }
 
-    // Add in the extra point/label when only clicks and no box
-    // The extra point is at (0, 0) with label -1
-    pointCoords[2 * n] = 0.0;
-    pointCoords[2 * n + 1] = 0.0;
-    pointLabels[n] = -1.0;
-
-    // Create the tensor
-    pointCoordsTensor = new Tensor("float32", pointCoords, [1, n + 1, 2]);
-    pointLabelsTensor = new Tensor("float32", pointLabels, [1, n + 1]);
+    if (mode === "lasso") {
+      pointCoordsTensor = new Tensor("float32", pointCoords, [1, n, 2]);
+      pointLabelsTensor = new Tensor("float32", pointLabels, [1, n]);
+    } else {
+      pointCoords[2 * n] = 0.0;
+      pointCoords[2 * n + 1] = 0.0;
+      pointLabels[n] = -1.0;
+      pointCoordsTensor = new Tensor("float32", pointCoords, [1, n + 1, 2]);
+      pointLabelsTensor = new Tensor("float32", pointLabels, [1, n + 1]);
+    }
+    feeds.point_coords = pointCoordsTensor;
+    feeds.point_labels = pointLabelsTensor;
   }
-
-  if (pointCoordsTensor === undefined || pointLabelsTensor === undefined)
+  if (feeds.point_coords === undefined || feeds.point_labels === undefined)
     return;
 
-  const imageSizeTensor = new Tensor("float32", [
-    modelScale.height,
-    modelScale.width,
-  ]);
+  if (lastPredMask) {
+    //last Pred Mask will be float32 array of 256*256 size
+    feeds.mask_input = new Tensor("float32", lastPredMask, [1, 1, 256, 256]);
+    feeds.has_mask_input = new Tensor("float32", [1], [1]);
+  } else {
+    feeds.mask_input = new Tensor(
+      "float32",
+      new Float32Array(256 * 256),
+      [1, 1, 256, 256], // SAM expects this shape
+    );
+    feeds.has_mask_input = new Tensor("float32", [0], [1]);
+  }
 
-  // There is no previous mask, so default to an empty tensor
-  const maskInput = new Tensor(
-    "float32",
-    new Float32Array(256 * 256),
-    [1, 1, 256, 256],
-  );
-  // There is no previous mask, so default to 0
-  const hasMaskInput = new Tensor("float32", [0]);
-
-  return {
-    image_embeddings: imageEmbedding,
-    point_coords: pointCoordsTensor,
-    point_labels: pointLabelsTensor,
-    orig_im_size: imageSizeTensor,
-    mask_input: maskInput,
-    has_mask_input: hasMaskInput,
-  };
+  return feeds;
 };

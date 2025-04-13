@@ -1,27 +1,22 @@
-import ImageCropper from "../ImageCropper.jsx";
-import LivingRoomThumbnail from "../../assets/living_room/thumbnail.jpg";
-import BedroomThumbnail from "../../assets/bedroom/thumbnail.jpg";
-import ImageColorsExtractor from "../ImageColorsExtractor.jsx";
-import SelectColorsFromPalette from "../selectFromPalette.jsx";
-import RecommendedColors from "../RecommendedColors.jsx";
-import ViewShades from "../ViewShades.jsx";
 import { useEditor } from "../../hooks/editor/editorContext.js";
 import { useStepper } from "../../hooks/stepper/stepperContext.js";
 import { useEffect } from "react";
 import { transformDataForModel } from "../../utils/modelHelpers.js";
 import { onnxMaskToImage } from "../../utils/imageHelpers.js";
-import CanvasImage from "../CanvasImage.jsx";
 import { ImageEditor } from "../ImageEditor.jsx";
 
 export default function ShadeRoom({ modelSession }) {
   const {
     image,
     clicks,
+    lastPredMask,
     scale,
+    mode,
     embedding,
     embeddingStatus,
     setMaskImage,
     selectedShade,
+    setLastPredMask,
   } = useEditor();
   const { goToStep } = useStepper();
   const runONNX = async () => {
@@ -34,15 +29,22 @@ export default function ShadeRoom({ modelSession }) {
       )
         return null;
       else {
-        const feeds = transformDataForModel({
-          clicks,
-          embedding,
+        const input = {
+          clicks: clicks,
           modelScale: scale,
-        });
+          embedding: embedding,
+          lastPredMask: lastPredMask,
+          mode: mode,
+        };
+        const feeds = transformDataForModel(input);
+        console.log(feeds);
         if (feeds === undefined) return;
 
         const results = await modelSession.run(feeds);
+        setLastPredMask(results.low_res_masks.data);
         const output = results[modelSession.outputNames[0]];
+
+        // setLastPredMask(output.data);
 
         const maskImage = onnxMaskToImage(
           output.data,

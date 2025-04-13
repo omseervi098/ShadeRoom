@@ -5,7 +5,9 @@ import { useState, useCallback, useEffect } from "react";
 export const EditorProvider = ({ children }) => {
   const [image, setImage] = useState(null); // HTMLImageElement of Main Image
   const [clicks, setClicks] = useState([]);
+  const [lastPredMask, setLastPredMask] = useState(null);
   const [maskImage, setMaskImage] = useState(null);
+  const [maskSvg, setMaskSvg] = useState(null);
   const [error, setError] = useState(null);
   const [shades, setShades] = useState({
     textures: [],
@@ -102,8 +104,12 @@ export const EditorProvider = ({ children }) => {
       value={{
         clicks,
         setClicks,
+        lastPredMask,
+        setLastPredMask,
         maskImage,
         setMaskImage,
+        maskSvg,
+        setMaskSvg,
         image,
         embedding,
         shades,

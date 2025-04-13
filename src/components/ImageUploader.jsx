@@ -43,7 +43,7 @@ const ImageUploader = ({
   const compressFile = async (file) => {
     const options = {
       maxSizeMB: 2,
-      maxWidthOrHeight: 1920,
+      maxWidthOrHeight: 1440,
       useWebWorker: true,
     };
     try {

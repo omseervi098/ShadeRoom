@@ -5,8 +5,10 @@ import { useStepper } from "../hooks/stepper/stepperContext.js";
 import { useGeneral } from "../hooks/general/generalContext.js";
 import { EditorProvider } from "../hooks/editor/editorProvider.jsx";
 import { InferenceSession } from "onnxruntime-web";
-import ONNXDecoderModel from "../assets/sam_vit_b_decoder.onnx";
+import ONNXDecoderModel from "../assets/sam_vit_h_4b8939.decoder.quant.onnx";
 import { useState, useEffect } from "react";
+import * as ort from "onnxruntime-web";
+ort.env.wasm.numThreads = 1;
 
 export default function Journey() {
   const [modelSession, setModelSession] = useState(null);

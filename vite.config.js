@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => ({
   esbuild: {
     drop: mode === "production" ? ["console", "debugger"] : [], // Removes console logs in production
   },
-  assetsInclude: ["**/*.onnx"],
+  assetsInclude: ["**/*.onnx", "**/*.wasm"],
   optimizeDeps: {
     exclude: ["onnxruntime-web"],
   },
