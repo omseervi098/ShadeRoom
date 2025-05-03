@@ -28,7 +28,18 @@ export default function CanvasImage() {
         } else {
           height = containerHeight;
           width = imageAspectRatio * height;
+          if (width >= containerWidth) {
+            width = containerWidth;
+            height = width / imageAspectRatio;
+          }
         }
+        console.log(
+          isMobileScreen,
+          containerHeight,
+          containerWidth,
+          height,
+          width,
+        );
         setDimensions({ width, height });
       }
     };
@@ -45,7 +56,7 @@ export default function CanvasImage() {
 
   return (
     <div
-      className={`relative w-full h-full overflow-hidden ${mode === "polygon" ? "cursor-pen" : "cursor-default"} flex justify-center`}
+      className={`relative w-full h-full ${mode === "polygon" ? "cursor-pen" : "cursor-default"} flex justify-center`}
       ref={containerRef}
     >
       <Stage width={dimensions.width} height={dimensions.height}>

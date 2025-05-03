@@ -30,7 +30,7 @@ export default function Sidebar({ colors, textures }) {
   return (
     <div className="z-10 w-full flex h-full flex-col-reverse md:flex-row relative ">
       {/* Sidebar */}
-      <div className="w-full h-16 md:h-auto md:w-16 lg:w-30 md:bg-primary text-primary flex md:flex-col items-center justify-center md:justify-start space-x-3 md:space-x-0 py-3 md:space-y-4 px-2">
+      <div className="w-full h-16 md:h-auto md:w-16 lg:w-30 md:bg-primary text-primary flex md:flex-col items-center justify-center md:justify-start space-x-3 md:space-x-0 py-3 md:space-y-3 px-2">
         <button
           className="md:w-full bg-secondary rounded-full lg:rounded-md p-2 flex items-center justify-evenly gap-2 cursor-pointer hover:bg-secondary/70"
           onClick={enterFullscreen}
