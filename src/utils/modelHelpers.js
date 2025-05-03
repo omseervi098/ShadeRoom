@@ -8,7 +8,7 @@ export const getImageEmbedding = async (imageElement) => {
     const imageFile = await convertURLtoFile(imageElement.src, "image.jpg");
     console.log(imageFile);
     const response = await axios.post(
-      `${import.meta.env.VITE_SHADEROOM_BACKEND_URI}/get-embedding`,
+      `${import.meta.env.VITE_SHADEROOM_BACKEND_URI}/get-embedding?__sign=${import.meta.env.VITE_SHADEROOM_BACKEND_TOKEN}`,
       {
         image: imageFile,
       },
