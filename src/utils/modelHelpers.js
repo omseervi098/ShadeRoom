@@ -7,8 +7,16 @@ export const getImageEmbedding = async (imageElement) => {
   try {
     const imageFile = await convertURLtoFile(imageElement.src, "image.jpg");
     console.log(imageFile);
+
+    let url = `${import.meta.env.VITE_SHADEROOM_BACKEND_URI}/get-embedding?__sign=${import.meta.env.VITE_SHADEROOM_BACKEND_TOKEN}`;
+    
+    if (import.meta.env.MODE ==="development") {
+      url = `${import.meta.env.VITE_SHADEROOM_BACKEND_URI}/get-embedding`;
+      console.log("Development mode: Using local backend URI", url);
+    }
+    
     const response = await axios.post(
-      `${import.meta.env.VITE_SHADEROOM_BACKEND_URI}/get-embedding?__sign=${import.meta.env.VITE_SHADEROOM_BACKEND_TOKEN}`,
+      url,
       {
         image: imageFile,
       },
