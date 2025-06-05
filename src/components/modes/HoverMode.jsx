@@ -2,15 +2,16 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as _ from "underscore";
 import { Image, Rect, Circle } from "react-konva";
 import { useEditor } from "../../hooks/editor/editorContext.js";
+import { onnxMaskToImage } from "../../utils/imageHelpers.js";
 
-export default function HoverMode(props) {
-  const { width, height } = props;
-  const { scale, maskImage, setClicks, setMaskImage, setMode } = useEditor();
+export default function HoverMode({ width, height, setShowHoverControls }) {
+  const { scale, maskOutput, setClicks, setMaskOutput, setMode, addMask } = useEditor();
   const firstClicked = useRef(false);
   const lastClickRef = useRef(null);
   const [localClicks, setLocalClicks] = useState([]);
+
   const handleMouseMove = _.throttle((event) => {
-    if (firstClicked.current) return;
+    if (firstClicked.current) return; // Disable hover after first click
     const stage = event.target.getStage();
     const pointer = stage.getPointerPosition();
     const transform = stage.getAbsoluteTransform().copy().invert();
@@ -18,7 +19,7 @@ export default function HoverMode(props) {
     const scaleRatio = scale.width / width;
     let x = pos.x * scaleRatio;
     let y = pos.y * scaleRatio;
-
+    console.log("hover mode : x, y", x, y);
     if (
       !lastClickRef.current ||
       Math.abs(lastClickRef.current.x - x) > 10 ||
@@ -32,6 +33,7 @@ export default function HoverMode(props) {
   const handleMouseClick = (event) => {
     if (!firstClicked.current) {
       firstClicked.current = true;
+      setShowHoverControls(true); // Show control buttons after first click
     }
     const stage = event.target.getStage();
     const pointer = stage.getPointerPosition();
@@ -48,17 +50,40 @@ export default function HoverMode(props) {
       setLocalClicks((prev) => [...prev, { x: pos.x, y: pos.y, type }]);
     }
   };
+
+  const handleConfirm = useCallback(() => {
+    if (maskOutput && localClicks.length > 0) {
+      const confirmedMask = {
+        id: Date.now(),
+        mask: maskOutput,
+        mode: "hover",
+        clicks: localClicks,
+      }
+      addMask(confirmedMask);
+      console.log("Mask confirmed with clicks:", confirmedMask);
+    }
+    // Reset hover mode state
+    // setMode("pan");
+    handleReset();
+  }, [maskOutput, localClicks, setMode, addMask]);
+
   const handleUndo = useCallback(() => {
     setClicks((prev) => prev.slice(0, -1));
     setLocalClicks((prev) => prev.slice(0, -1));
-  }, [setClicks]);
+    if (localClicks.length <= 1) {
+      firstClicked.current = false;
+      setShowHoverControls(false);
+    }
+  }, [setClicks, localClicks, setShowHoverControls]);
 
-  // Reset = clear all clicks
   const handleReset = useCallback(() => {
     setClicks([]);
     setLocalClicks([]);
+    setMaskOutput(null);
     firstClicked.current = false;
-  }, [setClicks]);
+    setShowHoverControls(false);
+  }, [setClicks, setMaskOutput, setShowHoverControls]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isCtrlOrCmd = e.ctrlKey || e.metaKey;
@@ -77,16 +102,35 @@ export default function HoverMode(props) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleUndo, handleReset]);
+
+  useEffect(() => {
+    const handleConfirmEvent = () => handleConfirm();
+    const handleUndoEvent = () => handleUndo();
+    const handleResetEvent = () => handleReset();
+
+    document.addEventListener("confirmHover", handleConfirmEvent);
+    document.addEventListener("undoHover", handleUndoEvent);
+    document.addEventListener("resetHover", handleResetEvent);
+
+    return () => {
+      document.removeEventListener("confirmHover", handleConfirmEvent);
+      document.removeEventListener("undoHover", handleUndoEvent);
+      document.removeEventListener("resetHover", handleResetEvent);
+    };
+  }, [handleConfirm, handleUndo, handleReset]);
+
   return (
     <>
+    {maskOutput && (
       <Image
-        image={maskImage}
+        image={maskOutput.image}
         x={0}
         y={0}
         width={width}
         height={height}
         objectFit={"contain"}
       />
+    )}
       {localClicks.map((click, index) => (
         <Circle
           key={index}
@@ -105,9 +149,9 @@ export default function HoverMode(props) {
         height={height}
         onPointerMove={handleMouseMove}
         onPointerClick={handleMouseClick}
-        onPointerOut={() => {
-          _.defer(() => setMaskImage(null));
-        }}
+        // onPointerOut={() => {
+        //   _.defer(() => setMaskOutput(null));
+        // }}
         onContextMenu={(e) => {
           e.evt.preventDefault();
         }}

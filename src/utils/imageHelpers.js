@@ -1,3 +1,5 @@
+import { getBounds } from "./modesHelper";
+
 export const scaleImage = (imageElement) => {
   const LONG_SIDE_LENGTH = 1024;
   let w = imageElement.naturalWidth;
@@ -27,18 +29,10 @@ export const convertURLtoFile = async (url, filename) => {
     });
 };
 
-export const arrayToImageData = (
-  input,
-  height,
-  width,
-  maskColor = [0, 0, 255, 100],
-) => {
+export const arrayToImageData = ({input, width, height, maskColor}) => {
   const [r, g, b, a] = maskColor;
   const arr = new Uint8ClampedArray(4 * width * height).fill(0);
   for (let i = 0; i < input.length; i++) {
-    // Threshold the onnx model mask prediction at 0.0
-    // This is equivalent to thresholding the mask using predictor.model.mask_threshold
-    // in python
     if (input[i] > 0.0) {
       arr[4 * i] = r;
       arr[4 * i + 1] = g;
@@ -64,7 +58,14 @@ export const imageDataToCanvas = (imageData) => {
   return canvas;
 };
 
-export const onnxMaskToImage = (input, height, width, maskColor) => {
-  maskColor = [0, 0, 255, 100];
-  return imageDataToImage(arrayToImageData(input, height, width, maskColor));
+export const onnxMaskToImage = ({input, width, height, maskColor}) => {
+  const imageData = arrayToImageData({input, width, height, maskColor});
+  return {
+    imageData: imageData,
+    bounds: getBounds(imageData),
+    image: imageDataToImage(imageData),
+    width: imageData.width,
+    height: imageData.height,
+    maskColor: maskColor,
+  }
 };

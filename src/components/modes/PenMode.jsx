@@ -125,7 +125,7 @@ function PolygonConstructor(props) {
         height={props.height}
         onPointerDown={(event) => {
           if (!isComplete) {
-            event.evt.preventDefault(); // prevent touch scrolling
+            // event.evt.preventDefault(); // prevent touch scrolling
             const stage = event.target.getStage();
             const pointer = stage.getPointerPosition();
             const transform = stage.getAbsoluteTransform().copy().invert();

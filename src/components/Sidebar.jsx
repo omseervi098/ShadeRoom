@@ -134,7 +134,6 @@ export default function Sidebar({ colors, textures }) {
           <div className="w-max mx-auto flex md:flex-col items-center space-x-2 md:space-x-0 md:space-y-1 ">
             {colors &&
               colors.map((color, index) => {
-                console.log(color);
                 return (
                   <div
                     key={index}

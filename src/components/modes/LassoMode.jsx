@@ -5,7 +5,7 @@ import * as _ from "underscore";
 
 export default function LassoMode(props) {
   const { width, height } = props;
-  const { scale, maskImage, setClicks, setMaskImage } = useEditor();
+  const { scale, maskOutput, setClicks, setMaskOutput } = useEditor();
   const [lassoPoints, setLassoPoints] = useState([]);
   const isDrawing = useRef(false);
 
@@ -82,9 +82,9 @@ export default function LassoMode(props) {
 
   return (
     <>
-      {maskImage && (
+      {maskOutput && (
         <Image
-          image={maskImage}
+          image={maskOutput.image}
           x={0}
           y={0}
           width={width}
@@ -113,6 +113,9 @@ export default function LassoMode(props) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerOut={handlePointerOut}
+        onContextMenu={(e) => {
+          e.evt.preventDefault();
+        }}
       />
     </>
   );

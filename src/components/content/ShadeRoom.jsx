@@ -2,8 +2,9 @@ import { useEditor } from "../../hooks/editor/editorContext.js";
 import { useStepper } from "../../hooks/stepper/stepperContext.js";
 import { useEffect } from "react";
 import { transformDataForModel } from "../../utils/modelHelpers.js";
-import { onnxMaskToImage } from "../../utils/imageHelpers.js";
+import { arrayToImageData, imageDataToImage, onnxMaskToImage } from "../../utils/imageHelpers.js";
 import { ImageEditor } from "../ImageEditor.jsx";
+import { rgbStrToRgbaArray } from "../../utils/colors.js";
 
 export default function ShadeRoom({ modelSession }) {
   const {
@@ -14,7 +15,7 @@ export default function ShadeRoom({ modelSession }) {
     mode,
     embedding,
     embeddingStatus,
-    setMaskImage,
+    setMaskOutput,
     selectedShade,
     setLastPredMask,
   } = useEditor();
@@ -43,15 +44,17 @@ export default function ShadeRoom({ modelSession }) {
         const results = await modelSession.run(feeds);
         setLastPredMask(results.low_res_masks.data);
         const output = results[modelSession.outputNames[0]];
+        let rgb = [0, 0, 255, 100];
+        if (selectedShade && selectedShade.rgb) {
+          rgb = rgbStrToRgbaArray(selectedShade.rgb, 150);
+        }
 
-        // setLastPredMask(output.data);
-
-        const maskImage = onnxMaskToImage(
-          output.data,
-          output.dims[3],
-          output.dims[2],
-        );
-        setMaskImage(maskImage);
+        setMaskOutput(onnxMaskToImage({
+          input: output.data,
+          width: output.dims[2],
+          height: output.dims[3],
+          maskColor: rgb,
+        }));
       }
     } catch (e) {
       console.log(e);

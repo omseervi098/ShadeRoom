@@ -6,8 +6,7 @@ export const EditorProvider = ({ children }) => {
   const [image, setImage] = useState(null); // HTMLImageElement of Main Image
   const [clicks, setClicks] = useState([]);
   const [lastPredMask, setLastPredMask] = useState(null);
-  const [maskImage, setMaskImage] = useState(null);
-  const [maskSvg, setMaskSvg] = useState(null);
+  const [maskOutput, setMaskOutput] = useState(null); 
   const [error, setError] = useState(null);
   const [shades, setShades] = useState({
     textures: [],
@@ -23,6 +22,13 @@ export const EditorProvider = ({ children }) => {
   const [embeddingStatus, setEmbeddingStatus] = useState(""); //status for
   // embedding
   const [mode, setMode] = useState("hover");
+
+  const [maskState, setMaskState] = useState([]); // New state for confirmed masks
+
+  const addMask = (mask) => {
+    setMaskState((prev) => [...prev, mask]);
+  };
+
 
   useEffect(() => {
     if (image) {
@@ -106,10 +112,8 @@ export const EditorProvider = ({ children }) => {
         setClicks,
         lastPredMask,
         setLastPredMask,
-        maskImage,
-        setMaskImage,
-        maskSvg,
-        setMaskSvg,
+        maskOutput,
+        setMaskOutput,
         image,
         embedding,
         shades,
@@ -118,6 +122,8 @@ export const EditorProvider = ({ children }) => {
         scale,
         embeddingStatus,
         mode,
+        maskState,
+        addMask,
         setMode,
         addColors,
         removeColor,

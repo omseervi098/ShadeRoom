@@ -51,7 +51,7 @@ export const transformDataForModel = ({
   };
 
   // Check there are input click prompts
-  if (clicks) {
+  if (clicks && clicks.length !== 0 ) {
     let pointCoords;
     let pointLabels;
     let pointCoordsTensor;
