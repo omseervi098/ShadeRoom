@@ -4,7 +4,7 @@ import { Image, Rect, Circle } from "react-konva";
 import { useEditor } from "../../hooks/editor/editorContext.js";
 import { onnxMaskToImage } from "../../utils/imageHelpers.js";
 
-export default function HoverMode({ width, height, setShowHoverControls }) {
+export default function HoverMode({ register, width, height, setShowActionControls, setSelectedMaskId }) {
   const { scale, maskOutput, setClicks, setMaskOutput, setMode, addMask } = useEditor();
   const firstClicked = useRef(false);
   const lastClickRef = useRef(null);
@@ -19,7 +19,6 @@ export default function HoverMode({ width, height, setShowHoverControls }) {
     const scaleRatio = scale.width / width;
     let x = pos.x * scaleRatio;
     let y = pos.y * scaleRatio;
-    console.log("hover mode : x, y", x, y);
     if (
       !lastClickRef.current ||
       Math.abs(lastClickRef.current.x - x) > 10 ||
@@ -33,7 +32,8 @@ export default function HoverMode({ width, height, setShowHoverControls }) {
   const handleMouseClick = (event) => {
     if (!firstClicked.current) {
       firstClicked.current = true;
-      setShowHoverControls(true); // Show control buttons after first click
+      setShowActionControls(true); // Show control buttons after first click
+      setSelectedMaskId(null);
     }
     const stage = event.target.getStage();
     const pointer = stage.getPointerPosition();
@@ -44,7 +44,6 @@ export default function HoverMode({ width, height, setShowHoverControls }) {
     let y = pos.y * scaleRatio;
     const clickedButton = event.evt.button;
     const type = clickedButton === 0 ? 1 : clickedButton === 2 ? 0 : null;
-    console.log("clickedButton", clickedButton);
     if (type !== null) {
       setClicks((prev) => [...prev, { x, y, type }]);
       setLocalClicks((prev) => [...prev, { x: pos.x, y: pos.y, type }]);
@@ -72,17 +71,17 @@ export default function HoverMode({ width, height, setShowHoverControls }) {
     setLocalClicks((prev) => prev.slice(0, -1));
     if (localClicks.length <= 1) {
       firstClicked.current = false;
-      setShowHoverControls(false);
+      setShowActionControls(false);
     }
-  }, [setClicks, localClicks, setShowHoverControls]);
+  }, [setClicks, localClicks, setShowActionControls]);
 
   const handleReset = useCallback(() => {
     setClicks([]);
     setLocalClicks([]);
     setMaskOutput(null);
     firstClicked.current = false;
-    setShowHoverControls(false);
-  }, [setClicks, setMaskOutput, setShowHoverControls]);
+    setShowActionControls(false);
+  }, [setClicks, setMaskOutput, setShowActionControls]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -103,21 +102,13 @@ export default function HoverMode({ width, height, setShowHoverControls }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleUndo, handleReset]);
 
-  useEffect(() => {
-    const handleConfirmEvent = () => handleConfirm();
-    const handleUndoEvent = () => handleUndo();
-    const handleResetEvent = () => handleReset();
-
-    document.addEventListener("confirmHover", handleConfirmEvent);
-    document.addEventListener("undoHover", handleUndoEvent);
-    document.addEventListener("resetHover", handleResetEvent);
-
-    return () => {
-      document.removeEventListener("confirmHover", handleConfirmEvent);
-      document.removeEventListener("undoHover", handleUndoEvent);
-      document.removeEventListener("resetHover", handleResetEvent);
-    };
-  }, [handleConfirm, handleUndo, handleReset]);
+useEffect(() => {
+    register({
+      confirm: () => handleConfirm(),
+      undo: () => handleUndo(),
+      reset: () => handleReset(),
+    });
+  }, [register]);
 
   return (
     <>

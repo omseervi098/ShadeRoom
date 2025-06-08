@@ -1,3 +1,5 @@
+import { getImageElementFromBlob } from "./imageHelpers";
+
 const isPointInMask = ({x, y, mask}) => {
     const {width, height, bounds, imageData} = mask;
     // Ensure x, y are in image width and height of image
@@ -51,4 +53,35 @@ export function getMaskIndexOnHover({
         reject("No mask found at the given coordinates.");
     });
     
+}
+export function polygonToMask(points, width, height, maskColor = [0,0,255,100]) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+
+  // Clear canvas to transparent
+  ctx.clearRect(0, 0, width, height);
+
+  // Draw filled polygon
+  ctx.fillStyle = `rgba(${maskColor[0]}, ${maskColor[1]}, ${maskColor[2]}, ${maskColor[3] / 255})`;
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  const imageData = ctx.getImageData(0, 0, width, height);
+  
+
+  //get Image element from canvas.toDataURL
+
+  const image = new Image();
+  image.src = canvas.toDataURL();
+  return {
+    image,
+    imageData,
+  };
 }

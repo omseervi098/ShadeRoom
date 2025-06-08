@@ -6,7 +6,6 @@ export const getImageEmbedding = async (imageElement) => {
   if (!imageElement) return null;
   try {
     const imageFile = await convertURLtoFile(imageElement.src, "image.jpg");
-    console.log(imageFile);
 
     let url = `${import.meta.env.VITE_SHADEROOM_BACKEND_URI}/get-embedding?__sign=${import.meta.env.VITE_SHADEROOM_BACKEND_TOKEN}`;
     

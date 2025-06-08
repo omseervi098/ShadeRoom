@@ -28,7 +28,9 @@ export const EditorProvider = ({ children }) => {
   const addMask = (mask) => {
     setMaskState((prev) => [...prev, mask]);
   };
-
+  const removeMask = (id) => {
+    setMaskState(prev => prev.filter(mask => mask.id !== id));
+  };
 
   useEffect(() => {
     if (image) {
@@ -124,6 +126,7 @@ export const EditorProvider = ({ children }) => {
         mode,
         maskState,
         addMask,
+        removeMask,
         setMode,
         addColors,
         removeColor,

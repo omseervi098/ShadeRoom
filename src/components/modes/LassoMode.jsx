@@ -1,11 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { Image, Line, Rect } from "react-konva";
 import { useEditor } from "../../hooks/editor/editorContext.js";
 import * as _ from "underscore";
 
 export default function LassoMode(props) {
-  const { width, height } = props;
-  const { scale, maskOutput, setClicks, setMaskOutput } = useEditor();
+  const { register, width, height, setShowActionControls, setSelectedMaskId } = props;
+  const { scale, maskOutput, setClicks, setMaskOutput, addMask } = useEditor();
   const [lassoPoints, setLassoPoints] = useState([]);
   const isDrawing = useRef(false);
 
@@ -52,6 +52,8 @@ export default function LassoMode(props) {
     const pos = transform.point(pointer);
     const down = scaleDown(pos);
     setLassoPoints([down]);
+    setShowActionControls(true);
+    setSelectedMaskId(null);
     isDrawing.current = true;
   };
 
@@ -66,20 +68,47 @@ export default function LassoMode(props) {
   };
 
   const handlePointerUp = (e) => {
-    console.log("handlePointerUp", e);
     isDrawing.current = false;
     if (lassoPoints.length > 1) {
       if (!boundingBox) return;
       console.log(boundingBox);
       setClicks(boundingBox);
     }
+    
   };
   const handlePointerOut = (e) => {
-    console.log("handlePointerOut", e);
     isDrawing.current = false;
-    _.defer(() => setMaskImage(null));
+    // _.defer(() => setMaskOutput(null));
   };
 
+  const handleConfirm = () => {
+    if (maskOutput) {
+      const confirmedMask = {
+        id: Date.now(),
+        mask: maskOutput,
+        mode: "lasso",
+        clicks: boundingBox,
+      }
+      addMask(confirmedMask);
+      console.log("Mask confirmed with clicks:", confirmedMask);
+    }
+    setShowActionControls(false);
+    _.defer(()=> setMaskOutput(null))
+    setLassoPoints([]);
+  };
+
+  const handleReset = () => {
+    _.defer(() => setMaskOutput(null));
+    setLassoPoints([]);
+    setShowActionControls(false);
+  };
+
+  useEffect(() => {
+    register({
+      confirm: handleConfirm,
+      reset: handleReset,
+    });
+  }, [register, handleConfirm]);
   return (
     <>
       {maskOutput && (

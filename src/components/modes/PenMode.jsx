@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Circle, Line, Rect } from "react-konva";
 import { useEditor } from "../../hooks/editor/editorContext.js";
+import { getBounds, polygonToMask } from "../../utils/modesHelper.js";
+import { rgbStrToRgbaArray } from "../../utils/colors.js";
 
 function Anchor(props) {
   const [strokeWidth, setStrokeWidth] = useState(2);
@@ -57,12 +59,23 @@ function PolygonOriginAnchor(props) {
     />
   );
 }
-function PolygonConstructor(props) {
+
+
+export default function PenMode(props) {
+  const { register, width, height, setShowActionControls, setSelectedMaskId } = props;
+  const { scale, addMask, maskState,selectedShade } = useEditor();
   const [points, setPoints] = useState([]);
+
+  
+
   const [nextPoint, setNextPoint] = useState({ x: 0, y: 0 });
   const [isComplete, setIsComplete] = useState(false);
 
   const handleClick = ({ x, y }) => {
+    if (points.length === 0) {
+      setShowActionControls(true);
+      setSelectedMaskId(null);
+    }
     setPoints(points.concat({ x, y }));
   };
 
@@ -86,10 +99,54 @@ function PolygonConstructor(props) {
   const handleReset = () => {
     setPoints([]);
     setIsComplete(false);
+    setShowActionControls(false);
   };
+
+  const handleConfirm = () => {
+    console.log("Confirming points:", points);
+    if (!isComplete || points.length < 3) {
+      console.warn("Not enough points to create a polygon mask.");
+      return;
+    }
+    console.log("Points confirmed:", points);
+    const scaledPoints = points.map((point) => ({
+      x: point.x * scale.width,
+      y: point.y * scale.height
+    }));
+
+    let rgb = [0, 0, 255, 100];
+    if (selectedShade && selectedShade.rgb) {
+      rgb = rgbStrToRgbaArray(selectedShade.rgb, 150);
+    }
+    const { image, imageData } = polygonToMask(scaledPoints, scale.width, scale.height, rgb);
+    const mask = {
+      id: Date.now(),
+      mode: "pen",
+      mask: {
+        image,
+        imageData,
+        width: scale.width,
+        height: scale.height,
+        maskColor: rgb,
+        bounds: getBounds(imageData),
+      },
+      points: points,
+    };
+    addMask(mask);
+    console.log("Mask added:", mask);
+    handleReset();
+  }
+
+  useEffect(() => {
+    register({
+      confirm: handleConfirm,
+      undo: handleUndo,
+      reset: handleReset,
+    });
+  }, [register, handleConfirm, handleUndo, handleReset]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
-      console.log("handleKeyDown", e);
       if (e.ctrlKey && e.key === "z") {
         e.preventDefault();
         handleUndo();
@@ -156,7 +213,6 @@ function PolygonConstructor(props) {
         <PolygonOriginAnchor
           point={scaleUp({ x: points[0].x, y: points[0].y })}
           onValidClick={() => {
-            props.onComplete(points);
             setNextPoint(points[0]);
             setIsComplete(true);
           }}
@@ -169,22 +225,5 @@ function PolygonConstructor(props) {
         />
       )}
     </>
-  );
-}
-
-export default function PenMode(props) {
-  const { width, height } = props;
-  const { scale } = useEditor();
-  const [points, setPoints] = useState([]);
-  return (
-    <PolygonConstructor
-      onComplete={(points) => {
-        setPoints(points);
-      }}
-      x={0}
-      y={0}
-      width={width}
-      height={height}
-    />
   );
 }

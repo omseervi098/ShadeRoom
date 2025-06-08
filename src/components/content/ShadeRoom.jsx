@@ -38,7 +38,6 @@ export default function ShadeRoom({ modelSession }) {
           mode: mode,
         };
         const feeds = transformDataForModel(input);
-        console.log(feeds);
         if (feeds === undefined) return;
 
         const results = await modelSession.run(feeds);
@@ -70,7 +69,6 @@ export default function ShadeRoom({ modelSession }) {
       console.log("Mask Image Generated");
     });
   }, [clicks]);
-  // console.log(LivingRoomThumbnail);
   return (
     <div className="w-full h-full">
       {embeddingStatus === "loading" ? (

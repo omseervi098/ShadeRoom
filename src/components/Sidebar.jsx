@@ -69,13 +69,6 @@ export default function Sidebar({ colors, textures }) {
         </button>
         <button
           className="md:w-full bg-secondary rounded-full lg:rounded-md p-2 flex items-center justify-evenly gap-2 cursor-pointer hover:bg-secondary/70"
-          onClick={() => toggleTab("tools")}
-        >
-          <RotateCw size={22} />
-          <span className="hidden lg:block font-semibold text-sm">Redo</span>
-        </button>
-        <button
-          className="md:w-full bg-secondary rounded-full lg:rounded-md p-2 flex items-center justify-evenly gap-2 cursor-pointer hover:bg-secondary/70"
           onClick={() => toggleTab("modes")}
         >
           <Mouse size={22} />

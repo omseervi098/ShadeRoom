@@ -4,22 +4,26 @@ import { Layer, Stage, Image, Group, Shape } from "react-konva";
 import PenMode from "./modes/PenMode.jsx";
 import LassoMode from "./modes/LassoMode.jsx";
 import HoverMode from "./modes/HoverMode.jsx";
-import { ZoomIn, ZoomOut, Check, RotateCcw, X } from "lucide-react";
+import { ZoomIn, ZoomOut, Check, RotateCcw, X, DeleteIcon, Delete, Trash2 } from "lucide-react";
 import { getMaskIndexOnHover } from "../utils/modesHelper.js";
 
 export default function CanvasImage() {
-  const { image, scale, mode, setMode, maskState } = useEditor();
+  const { image, scale, mode, setMode, maskState, removeMask } = useEditor();
   const containerRef = useRef(null);
   const stageRef = useRef(null);
-  const confirmedMasksLayerRef = useRef(null);
+  const actionRef = useRef({
+    confirm: null,
+    undo: null,
+    reset: null,
+  })
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [showHoverControls, setShowHoverControls] = useState(false);
+  const [showActionControls, setShowActionControls] = useState(false);
   const [hoveredMaskId, setHoveredMaskId] = useState(null);
-
+  const [selectedMaskId, setSelectedMaskId] = useState(null);
   const MIN_ZOOM = 1;
   const MAX_ZOOM = 3;
   const ZOOM_STEP = 0.25;
@@ -184,20 +188,70 @@ export default function CanvasImage() {
   };
 
 
+  const register = (handlers) => {
+    actionRef.current = handlers;
+  };
+
+  const handleConfirm = () => {
+    if (actionRef.current.confirm) {
+      actionRef.current.confirm();
+    } else {
+      console.warn("Confirm action not registered.");
+    }
+  };
+  const handleUndo = () => {
+    if (actionRef.current.undo) {
+      actionRef.current.undo();
+    } else {
+      console.warn("Undo action not registered.");
+    }
+  };
+  const handleReset = () => {
+    if (actionRef.current.reset) {
+      actionRef.current.reset();
+    } else {
+      console.warn("Reset action not registered.");
+    }
+  };
   return (
     <div className={`relative w-full h-full ${mode === "polygon" ? "cursor-pen" : "cursor-default"} flex justify-center`} ref={containerRef}>
-      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2 bg-white bg-opacity-90 rounded-lg p-2 shadow-lg">
+      {/* Action Controls */}
+      <div className="absolute bottom-0 right-4 z-10 flex flex-col gap-2 bg-white bg-opacity-90 rounded-lg p-2 shadow-lg">
+        {selectedMaskId && (
+          <>
+          <button onClick={() =>{
+            removeMask(selectedMaskId);
+            setSelectedMaskId(null);
+            setMode(mode.replace("pan-", ""));
+          }} className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded hover:bg-red-600 transition-colors" title="Delete Mask">
+            <Trash2 className="w-4 h-4" />
+            </button>
+          
+          <button onClick={() =>{
+            setSelectedMaskId(null);
+            setMode(mode.replace("pan-", ""));
+          }} className="w-8 h-8 flex items-center justify-center bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors" title="Delete Mask"><X className="w-4 h-4" /></button>
+          </>
+        )}
         <button onClick={zoomIn} disabled={zoom >= MAX_ZOOM} className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors" title="Zoom In"><ZoomIn className="w-4 h-4" /></button>
         <button onClick={zoomOut} disabled={zoom <= MIN_ZOOM} className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors" title="Zoom Out"><ZoomOut className="w-4 h-4" /></button>
         <button onClick={resetZoom} className="w-8 h-8 flex items-center justify-center bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-xs" title="Reset Zoom">1:1</button>
         <div className="text-xs text-center text-gray-600 font-mono">{Math.round(zoom * 100)}%</div>
-        {mode === "hover" && showHoverControls && (
+        
+        {showActionControls && (
           <>
-            <button onClick={() => document.dispatchEvent(new Event("confirmHover"))} className="w-8 h-8 flex items-center justify-center bg-green-500 text-white rounded hover:bg-green-600 transition-colors" title="Confirm Mask"><Check className="w-4 h-4" /></button>
-            <button onClick={() => document.dispatchEvent(new Event("undoHover"))} className="w-8 h-8 flex items-center justify-center bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors" title="Undo Last Click"><RotateCcw className="w-4 h-4" /></button>
-            <button onClick={() => document.dispatchEvent(new Event("resetHover"))} className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded hover:bg-red-600 transition-colors" title="Reset Clicks"><X className="w-4 h-4" /></button>
+          {actionRef.current.confirm && (
+            <button onClick={handleConfirm} className="w-8 h-8 flex items-center justify-center bg-green-500 text-white rounded hover:bg-green-600 transition-colors" title="Confirm Mask"><Check className="w-4 h-4" /></button>
+            )}
+            {actionRef.current.undo && (
+              <button onClick={handleUndo} className="w-8 h-8 flex items-center justify-center bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors" title="Undo Last Click"><RotateCcw className="w-4 h-4" /></button>
+            )}
+            {actionRef.current.reset && (
+              <button onClick={handleReset} className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded hover:bg-red-600 transition-colors" title="Reset Clicks"><X className="w-4 h-4" /></button>
+            )}
           </>
         )}
+       
       </div>
       
       <Stage 
@@ -229,19 +283,27 @@ export default function CanvasImage() {
 
         {/* Interactive modes layer - rendered below confirmed masks */}
         <Layer>
-          {mode === "lasso" && hoveredMaskId === null && (
-            <LassoMode width={dimensions.width} height={dimensions.height} />
+          {mode === "lasso" && (
+            <LassoMode
+            setShowActionControls={setShowActionControls}
+            setSelectedMaskId={setSelectedMaskId}
+             register={register} width={dimensions.width} height={dimensions.height} />
           )}
           {mode === "hover" && (
             <HoverMode
+              register={register}
               width={dimensions.width}
               height={dimensions.height}
-              setShowHoverControls={setShowHoverControls}
+              setSelectedMaskId={setSelectedMaskId}
+              setShowActionControls={setShowActionControls}
               isOverConfirmedMask={hoveredMaskId !== null}
             />
           )}
-          {mode === "polygon" && hoveredMaskId === null && (
-            <PenMode width={dimensions.width} height={dimensions.height} />
+          {mode === "polygon" && (
+            <PenMode 
+            setSelectedMaskId={setSelectedMaskId}
+            setShowActionControls={setShowActionControls}
+            register={register} width={dimensions.width} height={dimensions.height} />
           )}
         </Layer>
 
@@ -250,6 +312,11 @@ export default function CanvasImage() {
           {maskState && maskState.map(({mask, id}, index) => (
             <Group 
               key={`mask-group-${index}`}
+              onClick={() => {
+                if(!showActionControls){
+                  setSelectedMaskId(id)
+                }
+              }}
               clipFunc={(ctx) => {
                 const {width, height, imageData} = mask;
                 const scaleRatio = dimensions.width/width;
@@ -297,11 +364,11 @@ export default function CanvasImage() {
                 width={dimensions.width}
                 height={dimensions.height}
                 objectFit={"contain"}
-                opacity={hoveredMaskId === id ? 1 : 0.5}
+                opacity={selectedMaskId === id ? hoveredMaskId === id ? 0.8 : 1: 0.5}
               />
               
               {/* Add highlight border when hovered*/}
-              {hoveredMaskId === id && (
+              {(selectedMaskId === id || hoveredMaskId === id) && (
                 <Shape
                   sceneFunc={(context, shape) => {
                     // Create border around the clipped area
@@ -311,7 +378,7 @@ export default function CanvasImage() {
                     context.beginPath();
                     const rgba = mask.maskColor || [255, 0, 0, 150];
                     context.strokeStyle = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${1})`;
-                    context.lineWidth = 2;
+                    context.lineWidth = 3;
                     
                     // Draw border by finding edges
                     for (let y = 1; y < height - 1; y++) {
@@ -341,7 +408,7 @@ export default function CanvasImage() {
                     context.stroke();
                     context.fillStrokeShape(shape);
                   }}
-                  opacity={0.8}
+                  opacity={1}
                 />
               )} 
             </Group>

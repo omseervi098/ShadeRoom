@@ -15,7 +15,6 @@ export default function ImageCropper({
 
   const handleCropComplete = useCallback(
     (croppedArea, croppedAreaPixels) => {
-      console.log("croppedArea", croppedAreaPixels);
       getCroppedImg(imageSrc, croppedAreaPixels, rotation)
         .then((imageUri) => {
           onCropComplete(imageUri);

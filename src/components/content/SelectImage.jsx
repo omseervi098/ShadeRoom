@@ -15,7 +15,6 @@ export default function SelectImage() {
   const { image, scale, updateScale, updateImage } = useEditor();
   const handleUpload = (image) => {
     let croppedImage = null;
-    console.log("Image Uploaded", image);
     openModal({
       title: {
         header: "Rotate or Crop Your Image",
@@ -28,7 +27,6 @@ export default function SelectImage() {
           imageSrc={URL.createObjectURL(image)}
           aspect={3 / 2}
           onCropComplete={(image) => {
-            console.log("callback from ImageCropper", image);
             croppedImage = image;
           }}
         />
@@ -43,9 +41,7 @@ export default function SelectImage() {
             }
             try {
               const imageElement = await getImageElementFromBlob(croppedImage);
-              console.log("croppedImage", croppedImage);
               const { height, width, modelScale } = scaleImage(imageElement);
-              console.log("scaling Image..", { height, width, modelScale });
               updateScale({
                 height: height,
                 width: width,
@@ -53,14 +49,11 @@ export default function SelectImage() {
               });
               imageElement.width = width;
               imageElement.height = height;
-              console.log("image Element", imageElement);
               updateImage(imageElement);
-              console.log("going to next step ..");
               handleNext(croppedImage);
             } catch (error) {
               console.error("Error processing image:", error);
             }
-            console.log("closing modal..");
             closeModal();
           },
         },

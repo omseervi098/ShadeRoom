@@ -25,7 +25,6 @@ export default function SelectShades() {
   const handleTextureUpload = (textureFile) => {
     // Handle the uploaded texture file here
     let croppedTexture = null;
-    console.log("Uploaded texture:", textureFile);
     openModal({
       title: {
         header: "Rotate or Crop Your Texture",
@@ -38,7 +37,6 @@ export default function SelectShades() {
           imageSrc={URL.createObjectURL(textureFile)}
           aspect={1}
           onCropComplete={(image) => {
-            console.log("callback from ImageCropper for texture", image);
             croppedTexture = image;
           }}
         />
@@ -48,7 +46,6 @@ export default function SelectShades() {
           label: "Crop & Confirm",
           onClick: () => {
             if (croppedTexture) {
-              console.log("croppedImage", croppedTexture);
               addTextures([
                 {
                   id: 1231,
@@ -65,7 +62,6 @@ export default function SelectShades() {
     });
   };
   const onClickUploadTexture = () => {
-    console.log("Click Upload Texture");
     openModal({
       title: {
         header: "Upload your own Texture",
@@ -86,7 +82,6 @@ export default function SelectShades() {
   };
   const handleExtractColorsFromImage = (imageFile) => {
     let selectedColorsFromImage = [];
-    console.log("Uploaded Image to extract Colors", imageFile);
     openModal({
       title: {
         header: "Extract Colors from Image",
@@ -106,7 +101,6 @@ export default function SelectShades() {
         {
           label: "Confirm",
           onClick: () => {
-            console.log("confirm clicked", selectedColorsFromImage);
             addColors(selectedColorsFromImage);
             closeModal();
           },
@@ -116,7 +110,6 @@ export default function SelectShades() {
     });
   };
   const onClickExtractColorsFromImage = () => {
-    console.log("Clicked ExtractColorsFromImage");
     openModal({
       title: {
         header: "Upload Image to Extract Colors",
@@ -136,7 +129,6 @@ export default function SelectShades() {
   };
   const onClickSelectColorsFromPalette = () => {
     let selectedColorsFromPalette = [];
-    console.log("Clicked SelectColorsFromPalette");
     openModal({
       title: {
         header: "Choose Colors from Palette",
@@ -155,7 +147,6 @@ export default function SelectShades() {
         {
           label: "Confirm",
           onClick: () => {
-            console.log("confirm clicked");
             addColors(selectedColorsFromPalette);
             closeModal();
           },
@@ -166,7 +157,6 @@ export default function SelectShades() {
   };
   const onClickRecommendedColors = () => {
     let selectedTilesFromRecommended = [];
-    console.log("Clicked Recommended Colors");
     openModal({
       title: {
         header: "Recommended Colors",
@@ -185,15 +175,10 @@ export default function SelectShades() {
         {
           label: "Confirm",
           onClick: () => {
-            console.log("recommended clicked");
             // get all colors from tiles
             const colorsList = selectedTilesFromRecommended
               .map((tile) => tile.colors)
               .flat();
-            console.log(
-              "Recommended Colors from recommended colors",
-              colorsList,
-            );
             addColors(colorsList);
             closeModal();
           },
@@ -204,7 +189,6 @@ export default function SelectShades() {
   };
   const onClickRecommendedTextures = () => {
     let selectedTexturesFromRecommended = [];
-    console.log("Clicked Recommended Textures");
     openModal({
       title: {
         header: "Recommended Textures",
@@ -223,8 +207,6 @@ export default function SelectShades() {
         {
           label: "Confirm",
           onClick: async () => {
-            console.log("recommended clicked");
-            console.log(selectedTexturesFromRecommended);
             await addTextures(selectedTexturesFromRecommended);
             closeModal();
           },
@@ -234,7 +216,6 @@ export default function SelectShades() {
     });
   };
   const onClickViewShades = () => {
-    console.log("Clicked Recommended Textures");
     openModal({
       title: {
         header: "All Shades",
