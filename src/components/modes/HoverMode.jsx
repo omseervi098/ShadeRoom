@@ -56,7 +56,7 @@ export default function HoverMode({ register, width, height, setShowActionContro
         id: Date.now(),
         mask: maskOutput,
         mode: "hover",
-        clicks: localClicks,
+        input: localClicks,
       }
       addMask(confirmedMask);
       console.log("Mask confirmed with clicks:", confirmedMask);

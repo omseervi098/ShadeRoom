@@ -1,11 +1,11 @@
 import { useEditor } from "../hooks/editor/editorContext.js";
 import { useEffect, useState, useRef, use } from "react";
-import { Layer, Stage, Image, Group, Shape } from "react-konva";
+import { Layer, Stage, Image, Group, Shape, Rect } from "react-konva";
 import PenMode from "./modes/PenMode.jsx";
 import LassoMode from "./modes/LassoMode.jsx";
 import HoverMode from "./modes/HoverMode.jsx";
 import { ZoomIn, ZoomOut, Check, RotateCcw, X, DeleteIcon, Delete, Trash2 } from "lucide-react";
-import { getMaskIndexOnHover } from "../utils/modesHelper.js";
+import { getBoundaryFromImageData, getMaskIndexOnHover, getSolidMaskRows } from "../utils/modesHelper.js";
 
 export default function CanvasImage() {
   const { image, scale, mode, setMode, maskState, removeMask } = useEditor();
@@ -318,99 +318,55 @@ export default function CanvasImage() {
                 }
               }}
               clipFunc={(ctx) => {
-                const {width, height, imageData} = mask;
+                const {width, imageData} = mask;
                 const scaleRatio = dimensions.width/width;
-                // Create clipping path from non-transparent pixels
                 ctx.beginPath();
-                let hasPath = false;
-                
-                // Use a more efficient approach: create path from mask boundaries
-                for (let y = 0; y < height; y += 1) {
-                  let rowStart = -1;
-                  let newy = y*scaleRatio;
-                  for (let x = 0; x < width; x += 1) {
-                    const alpha = imageData.data[(y * width + x) * 4 + 3];
-
-                    let newx = x*scaleRatio; 
-                    
-                    if (alpha > 0 && rowStart === -1) {
-                      // Start of opaque region
-                      rowStart = newx;
-                    } else if (alpha === 0 && rowStart !== -1) {
-                      // End of opaque region
-                      ctx.rect(rowStart, newy, newx - rowStart, 1);
-                      hasPath = true;
-                      rowStart = -1;
-                    }
-                  }
-                  // Handle row ending with opaque pixels
-                  if (rowStart !== -1) {
-                    ctx.rect(rowStart, newy, width - rowStart, 1);
-                    hasPath = true;
-                  }
-                }
-              
-                if (!hasPath) {
-                  // Fallback: clip to entire canvas if no alpha detected
+                const rowRects = getSolidMaskRows(imageData)
+                if (!rowRects || rowRects.length === 0) {
                   ctx.rect(0, 0, dimensions.width, dimensions.height);
+                }else {
+                  rowRects.forEach(({ x, y, width, height }) => {
+                    ctx.rect(x * scaleRatio, y * scaleRatio, width * scaleRatio, height * scaleRatio);
+                  });
                 }
+                ctx.clip();
               }}
             >
-              {/* Render the actual colored/textured mask content */}
-              <Image
-                image={mask.image}
-                x={0}
-                y={0}
-                width={dimensions.width}
-                height={dimensions.height}
-                objectFit={"contain"}
-                opacity={selectedMaskId === id ? hoveredMaskId === id ? 0.8 : 1: 0.5}
+              <Shape
+                sceneFunc={(context, shape) => {
+                  const {imageData} = mask;
+                  const scaleRatio = dimensions.width / scale.width;
+                  const rects = getSolidMaskRows(imageData);
+                  const boundaryCoords = getBoundaryFromImageData(imageData);
+                  const rgba = mask.maskColor || [255, 0, 0, 150];
+                  const alpha = selectedMaskId === id ? 0.3: hoveredMaskId === id ? 0.1 : 0;
+                  const strokeAlpha = selectedMaskId === id ? 1 : 0;
+                  // 1. Fill the mask area
+                  context.beginPath();
+                  rects.forEach(({ x, y, width, height }) => {
+                    context.rect(
+                      x * scaleRatio,
+                      y * scaleRatio,
+                      width * scaleRatio,
+                      height * scaleRatio
+                    );
+                  });
+                  context.fillStyle = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${alpha})`;
+                  context.fill();
+                  context.fillShape(shape);
+                  context.closePath();
+                  // 2. Draw stroke around the mask
+                  context.beginPath();
+                  boundaryCoords.forEach(({ x, y }) => {
+                    context.rect(x * scaleRatio, y * scaleRatio, 1, 1);
+                  });
+                  context.strokeStyle = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${strokeAlpha})`;
+                  context.lineWidth = 1.5;
+                  context.stroke();
+                  context.fillStrokeShape(shape);
+                }}
+                opacity={1}
               />
-              
-              {/* Add highlight border when hovered*/}
-              {(selectedMaskId === id || hoveredMaskId === id) && (
-                <Shape
-                  sceneFunc={(context, shape) => {
-                    // Create border around the clipped area
-                    const {width, height, imageData} = mask;
-                    const scaleRatio = dimensions.width / scale.width;
-                    
-                    context.beginPath();
-                    const rgba = mask.maskColor || [255, 0, 0, 150];
-                    context.strokeStyle = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${1})`;
-                    context.lineWidth = 3;
-                    
-                    // Draw border by finding edges
-                    for (let y = 1; y < height - 1; y++) {
-                      let newy = y * scaleRatio;
-                      for (let x = 1; x < width - 1; x++) {
-                        const currentAlpha = imageData.data[(y * width + x) * 4 + 3];
-
-                        let newx = x * scaleRatio;
-                        
-                        if (currentAlpha > 0) {
-                          // Check if this pixel is on the edge
-                          const neighbors = [
-                            imageData.data[((y-1) * width + x) * 4 + 3], // top
-                            imageData.data[((y+1) * width + x) * 4 + 3], // bottom
-                            imageData.data[(y * width + (x-1)) * 4 + 3], // left
-                            imageData.data[(y * width + (x+1)) * 4 + 3]  // right
-                          ];
-                          
-                          // If any neighbor is transparent, this is an edge pixel
-                          if (neighbors.some(alpha => alpha === 0)) {
-                            context.rect(newx, newy, 1, 1);
-                          }
-                        }
-                      }
-                    }
-                  
-                    context.stroke();
-                    context.fillStrokeShape(shape);
-                  }}
-                  opacity={1}
-                />
-              )} 
             </Group>
           ))}
         </Layer>

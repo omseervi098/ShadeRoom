@@ -44,9 +44,6 @@ export default function ShadeRoom({ modelSession }) {
         setLastPredMask(results.low_res_masks.data);
         const output = results[modelSession.outputNames[0]];
         let rgb = [0, 0, 255, 100];
-        if (selectedShade && selectedShade.rgb) {
-          rgb = rgbStrToRgbaArray(selectedShade.rgb, 150);
-        }
 
         setMaskOutput(onnxMaskToImage({
           input: output.data,

@@ -1,4 +1,4 @@
-import { getBounds } from "./modesHelper";
+import {  getBounds } from "./modesHelper";
 
 export const scaleImage = (imageElement) => {
   const LONG_SIDE_LENGTH = 1024;
@@ -66,6 +66,6 @@ export const onnxMaskToImage = ({input, width, height, maskColor}) => {
     image: imageDataToImage(imageData),
     width: imageData.width,
     height: imageData.height,
-    maskColor: maskColor,
+    maskColor: maskColor
   }
 };

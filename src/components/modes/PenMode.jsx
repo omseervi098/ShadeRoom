@@ -121,7 +121,7 @@ export default function PenMode(props) {
     const { image, imageData } = polygonToMask(scaledPoints, scale.width, scale.height, rgb);
     const mask = {
       id: Date.now(),
-      mode: "pen",
+      mode: "polygon",
       mask: {
         image,
         imageData,
@@ -130,7 +130,7 @@ export default function PenMode(props) {
         maskColor: rgb,
         bounds: getBounds(imageData),
       },
-      points: points,
+      input: points,
     };
     addMask(mask);
     console.log("Mask added:", mask);
