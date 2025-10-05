@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { Minus, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { extractColorsFromImage, rgbToHex } from "../utils/colors.js";
-import { Plus, Minus } from "lucide-react";
 const ImageColorExtractor = ({
   imageSrc,
-  onUpdate = (selectedColors) => {},
+  onUpdate = (selectedColors) => { },
 }) => {
   const [colors, setColors] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
@@ -42,7 +42,7 @@ const ImageColorExtractor = ({
           <img
             src={imageSrc}
             alt="Uploaded"
-            className="w-full sm:max-w-60 md:max-w-70 lg:w-full h-30 sm:h-50 object-cover rounded-md shadow-lg"
+            className="w-full sm:max-w-60 md:max-w-70 lg:max-w-50 h-30 sm:h-50 object-cover rounded-md shadow-lg"
           />
         )}
 

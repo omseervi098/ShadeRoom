@@ -340,7 +340,7 @@ export default function CanvasImage() {
                   const boundaryCoords = getBoundaryFromImageData(imageData);
                   const rgba = mask.maskColor || [255, 0, 0, 150];
                   const alpha = selectedMaskId === id ? 0.3: hoveredMaskId === id ? 0.1 : 0;
-                  const strokeAlpha = selectedMaskId === id ? 1 : 0;
+                  const strokeAlpha = selectedMaskId === id ? 1 : hoveredMaskId === id ? 0.5 : 0;
                   // 1. Fill the mask area
                   context.beginPath();
                   rects.forEach(({ x, y, width, height }) => {
@@ -354,7 +354,7 @@ export default function CanvasImage() {
                   context.fillStyle = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${alpha})`;
                   context.fill();
                   context.fillShape(shape);
-                  context.closePath();
+                  // context.closePath();
                   // 2. Draw stroke around the mask
                   context.beginPath();
                   boundaryCoords.forEach(({ x, y }) => {
