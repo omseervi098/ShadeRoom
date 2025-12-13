@@ -1,15 +1,22 @@
+import { Check, Circle as IconCircle, Square, Triangle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Circle, Group, Image, Layer, Shape, Stage } from "react-konva";
 import { useEditor } from "../hooks/editor/editorContext.js";
-import { useEffect, useState, useRef, use } from "react";
-import { Layer, Stage, Image, Group, Shape, Rect } from "react-konva";
-import PenMode from "./modes/PenMode.jsx";
-import LassoMode from "./modes/LassoMode.jsx";
+import { getBounds, getMaskIndexOnHover } from "../utils/modesHelper.js";
+import CompareSliderOverlay from "./canvas/CompareSliderOverlay.jsx";
+import MaskControls from "./canvas/MaskControls.jsx";
+import MaskItem from "./canvas/MaskItem.jsx";
+import ViewModeSwitcher from "./canvas/ViewModeSwitcher.jsx";
+import ZoomControls from "./canvas/ZoomControls.jsx";
 import HoverMode from "./modes/HoverMode.jsx";
-import { ZoomIn, ZoomOut, Check, RotateCcw, X, DeleteIcon, Delete, Trash2 } from "lucide-react";
-import { getBoundaryFromImageData, getMaskIndexOnHover, getSolidMaskRows } from "../utils/modesHelper.js";
+import LassoMode from "./modes/LassoMode.jsx";
+import PenMode from "./modes/PenMode.jsx";
+
 
 export default function CanvasImage() {
-  const { image, scale, mode, setMode, maskState, removeMask } = useEditor();
+  const { image, scale, mode, setMode, maskState, removeMask, applyShadeToMask, applyPerspectiveToMask, removeShadeFromMask, selectedShade, viewMode, setViewMode } = useEditor();
   const containerRef = useRef(null);
+  const imageWrapperRef = useRef(null);
   const stageRef = useRef(null);
   const actionRef = useRef({
     confirm: null,
@@ -20,14 +27,34 @@ export default function CanvasImage() {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  // const [isDragging, setIsDragging] = useState(false);
   const [showActionControls, setShowActionControls] = useState(false);
   const [hoveredMaskId, setHoveredMaskId] = useState(null);
   const [selectedMaskId, setSelectedMaskId] = useState(null);
+
+  // States for Texture Shades
+  const [tileRepetition, setTileRepetition] = useState(4); // Default repetition
+  const [isPerspectiveMode, setIsPerspectiveMode] = useState(false);
+  const [perspectivePoints, setPerspectivePoints] = useState(null);
+
+  // Compare Mode State
+  const [sliderPosition, setSliderPosition] = useState(50);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Blend modes for realistic color application
+  const blendModes = [
+    { mode: 'multiply', name: 'Natural', opacity: 0.6, icon: IconCircle },
+    { mode: 'overlay', name: 'Vibrant', opacity: 0.5, icon: Square },
+    { mode: 'soft-light', name: 'Subtle', opacity: 0.4, icon: Triangle },
+    { mode: 'opaque', name: 'Bold', opacity: 0.9, icon: Check },
+  ];
+
+  const [currentBlendIndex, setCurrentBlendIndex] = useState(0);
   const MIN_ZOOM = 1;
   const MAX_ZOOM = 3;
   const ZOOM_STEP = 0.25;
 
+  // Update Canvas Size on resize
   useEffect(() => {
     const updateCanvasSize = () => {
       if (containerRef.current && image) {
@@ -36,7 +63,7 @@ export default function CanvasImage() {
         const isMobileScreen = window.innerWidth < 768;
         const imageAspectRatio = scale.width / scale.height;
         let width, height;
-        
+
         if (isMobileScreen) {
           width = containerWidth;
           height = width / imageAspectRatio;
@@ -48,21 +75,59 @@ export default function CanvasImage() {
             height = width / imageAspectRatio;
           }
         }
-        
+
         setDimensions({ width, height });
       }
     };
-    
+
     updateCanvasSize();
     window.addEventListener("resize", updateCanvasSize);
     return () => window.removeEventListener("resize", updateCanvasSize);
   }, [mode, image]);
 
+  // Reset zoom and stage position 
   useEffect(() => {
     setZoom(1);
     setStagePos({ x: 0, y: 0 });
   }, [image]);
 
+  // Update tile repetition when slider changes for selected mask
+  useEffect(() => {
+    if (selectedMaskId) {
+      const mask = maskState.find(m => m.id === selectedMaskId);
+      if (mask && mask.appliedShade && mask.appliedShade.type === 'texture') {
+        if (mask.appliedShade.tileRepetition !== tileRepetition) {
+          handleApplySelectedShade();
+        }
+      }
+    }
+  }, [tileRepetition]);
+
+  // When a mask is selected, if it has a texture, set the slider to its repetition
+  useEffect(() => {
+    if (selectedMaskId) {
+      const mask = maskState.find(m => m.id === selectedMaskId);
+      if (mask && mask.appliedShade && mask.appliedShade.type === 'texture') {
+        if (mask.appliedShade.tileRepetition) {
+          setTileRepetition(mask.appliedShade.tileRepetition);
+        }
+        if (mask.perspectivePoints) {
+          setPerspectivePoints(mask.perspectivePoints);
+        } else {
+          setPerspectivePoints(null);
+        }
+      } else {
+        setIsPerspectiveMode(false);
+        setPerspectivePoints(null);
+      }
+    } else {
+      setIsPerspectiveMode(false);
+      setPerspectivePoints(null);
+    }
+  }, [selectedMaskId, maskState]);
+
+
+  // zoom utils
   const zoomIn = () => {
     const newZoom = Math.min(zoom + ZOOM_STEP, MAX_ZOOM);
     setZoom(newZoom);
@@ -117,15 +182,17 @@ export default function CanvasImage() {
     setStagePos(newPos);
   };
 
-  const handleDragStart = () => {
-    setIsDragging(true);
+  const handleDragStart = (e) => {
+    if (e.target !== stageRef.current) return;
+    // setIsDragging(true);
     if (mode === "lasso" || mode === "hover") {
       setMode(`pan-${mode}`);
     }
   };
 
   const handleDragEnd = (e) => {
-    setIsDragging(false);
+    if (e.target !== stageRef.current) return;
+    // setIsDragging(false);
     setStagePos({ x: e.target.x(), y: e.target.y() });
     if (mode === "pan-lasso" || mode === "pan-hover") {
       setTimeout(() => setMode(mode.replace("pan-", "")), 100);
@@ -133,6 +200,7 @@ export default function CanvasImage() {
   };
 
   const handleDragMove = (e) => {
+    if (e.target !== stageRef.current) return;
     const stage = e.target;
     const scale = stage.scaleX();
     const containerWidth = dimensions.width;
@@ -158,9 +226,10 @@ export default function CanvasImage() {
     stage.position({ x: newX, y: newY });
   };
 
+  // select mask on hover
   const handleMouseMove = (e) => {
     //Only call if maskState is availabe and not empty
-    if (!maskState || maskState.length === 0) return;
+    if (!maskState || maskState.length === 0 || viewMode === 'compare') return;
 
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
@@ -187,11 +256,67 @@ export default function CanvasImage() {
     });
   };
 
+  // Compare Mode Slider utils
+  const handleSliderMove = useCallback(
+    (clientX) => {
+      if (imageWrapperRef.current) {
+        const rect = imageWrapperRef.current.getBoundingClientRect();
+        const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+        const percent = Math.max(0, Math.min((x / rect.width) * 100, 100));
+        setSliderPosition(percent);
+      }
+    },
+    []
+  );
 
+  const handleSliderMouseMove = useCallback(
+    (e) => {
+      if (!isResizing) return;
+      handleSliderMove(e.clientX);
+    },
+    [isResizing, handleSliderMove]
+  );
+
+  const handleSliderTouchMove = useCallback(
+    (e) => {
+      if (!isResizing) return;
+      handleSliderMove(e.touches[0].clientX);
+    },
+    [isResizing, handleSliderMove]
+  );
+
+  const handleSliderMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  // handling compare mode slider events 
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', handleSliderMouseMove);
+      window.addEventListener('mouseup', handleSliderMouseUp);
+      window.addEventListener('touchmove', handleSliderTouchMove);
+      window.addEventListener('touchend', handleSliderMouseUp);
+    } else {
+      window.removeEventListener('mousemove', handleSliderMouseMove);
+      window.removeEventListener('mouseup', handleSliderMouseUp);
+      window.removeEventListener('touchmove', handleSliderTouchMove);
+      window.removeEventListener('touchend', handleSliderMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleSliderMouseMove);
+      window.removeEventListener('mouseup', handleSliderMouseUp);
+      window.removeEventListener('touchmove', handleSliderTouchMove);
+      window.removeEventListener('touchend', handleSliderMouseUp);
+    };
+  }, [isResizing, handleSliderMouseMove, handleSliderMouseUp, handleSliderTouchMove]);
+
+  // register action handlers
   const register = (handlers) => {
     actionRef.current = handlers;
   };
 
+  // handling action events
   const handleConfirm = () => {
     if (actionRef.current.confirm) {
       actionRef.current.confirm();
@@ -213,164 +338,332 @@ export default function CanvasImage() {
       console.warn("Reset action not registered.");
     }
   };
+
+  // Apply selected shade to mask
+  const handleApplySelectedShade = () => {
+    if (!selectedMaskId) return;
+
+    let shadeToApply = selectedShade;
+    const currentMask = maskState.find(m => m.id === selectedMaskId);
+
+    if (!shadeToApply && currentMask && currentMask.appliedShade) {
+      shadeToApply = currentMask.appliedShade.texture || currentMask.appliedShade.color;
+    }
+
+    if (!shadeToApply && !currentMask?.appliedShade) return;
+
+    const currentBlend = blendModes[currentBlendIndex];
+    let shade = {};
+    const isTexture = shadeToApply.url;
+
+    if (isTexture) {
+      const textureObj = shadeToApply.url ? shadeToApply : currentMask.appliedShade.texture;
+
+      shade = {
+        type: "texture",
+        texture: textureObj,
+        blendMode: currentBlend.mode,
+        opacity: currentBlend.opacity,
+        tileRepetition: tileRepetition
+      };
+      if (perspectivePoints) {
+        applyPerspectiveToMask(selectedMaskId, perspectivePoints);
+      } else {
+        const bounds = getBounds(currentMask.mask.imageData);
+        const initialPoints = [
+          { x: bounds.minX, y: bounds.minY }, // Top-left
+          { x: bounds.maxX, y: bounds.minY }, // Top-right
+          { x: bounds.maxX, y: bounds.maxY }, // Bottom-right
+          { x: bounds.minX, y: bounds.maxY }  // Bottom-left
+        ];
+        applyPerspectiveToMask(selectedMaskId, initialPoints);
+      }
+    } else {
+      const colorObj = shadeToApply.hex ? shadeToApply : currentMask.appliedShade.color;
+      shade = {
+        type: "color",
+        color: colorObj,
+        blendMode: currentBlend.mode,
+        opacity: currentBlend.opacity
+      };
+    }
+
+    applyShadeToMask(selectedMaskId, shade);
+  };
+
+  // perpective utils
+  const togglePerspectiveMode = () => {
+    if (isPerspectiveMode) {
+      setIsPerspectiveMode(false);
+      handleApplySelectedShade();
+    } else {
+      if (!perspectivePoints) {
+        const mask = maskState.find(m => m.id === selectedMaskId);
+        if (mask) {
+          const bounds = getBounds(mask.mask.imageData);
+          const initialPoints = [
+            { x: bounds.minX, y: bounds.minY },
+            { x: bounds.maxX, y: bounds.minY },
+            { x: bounds.maxX, y: bounds.maxY },
+            { x: bounds.minX, y: bounds.maxY }
+          ];
+          setPerspectivePoints(initialPoints);
+
+          const currentMask = maskState.find(m => m.id === selectedMaskId);
+          if (currentMask && currentMask.appliedShade) {
+            applyPerspectiveToMask(selectedMaskId, initialPoints);
+          }
+        }
+      }
+      setIsPerspectiveMode(true);
+    }
+  };
+
+  const handlePerspectiveDrag = (index, e) => {
+    const stage = e.target.getStage();
+    const pointer = stage.getPointerPosition();
+    const transform = stage.getAbsoluteTransform().copy().invert();
+    const pos = transform.point(pointer);
+
+    const scaleRatio = scale.width / dimensions.width;
+    const x = pos.x * scaleRatio;
+    const y = pos.y * scaleRatio;
+
+    const newPoints = [...perspectivePoints];
+    newPoints[index] = { x, y };
+    setPerspectivePoints(newPoints);
+  };
+  const resetPerspective = () => {
+    if (perspectivePoints) {
+      const mask = maskState.find(m => m.id === selectedMaskId);
+      if (mask) {
+        const bounds = getBounds(mask.mask.imageData);
+        const initialPoints = [
+          { x: bounds.minX, y: bounds.minY },
+          { x: bounds.maxX, y: bounds.minY },
+          { x: bounds.maxX, y: bounds.maxY },
+          { x: bounds.minX, y: bounds.maxY }
+        ];
+        setPerspectivePoints(initialPoints);
+        applyPerspectiveToMask(selectedMaskId, initialPoints);
+      }
+    }
+  };
+
+  const handlePerspectiveDragEnd = () => {
+    handleApplySelectedShade();
+  };
+
+  const cycleBlendMode = () => {
+    setCurrentBlendIndex((prev) => (prev + 1) % blendModes.length);
+  };
+
   return (
     <div className={`relative w-full h-full ${mode === "polygon" ? "cursor-pen" : "cursor-default"} flex justify-center`} ref={containerRef}>
       {/* Action Controls */}
-      <div className="absolute bottom-0 right-4 z-10 flex flex-col gap-2 bg-white bg-opacity-90 rounded-lg p-2 shadow-lg">
-        {selectedMaskId && (
-          <>
-          <button onClick={() =>{
-            removeMask(selectedMaskId);
-            setSelectedMaskId(null);
-            setMode(mode.replace("pan-", ""));
-          }} className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded hover:bg-red-600 transition-colors" title="Delete Mask">
-            <Trash2 className="w-4 h-4" />
-            </button>
-          
-          <button onClick={() =>{
-            setSelectedMaskId(null);
-            setMode(mode.replace("pan-", ""));
-          }} className="w-8 h-8 flex items-center justify-center bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors" title="Delete Mask"><X className="w-4 h-4" /></button>
-          </>
-        )}
-        <button onClick={zoomIn} disabled={zoom >= MAX_ZOOM} className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors" title="Zoom In"><ZoomIn className="w-4 h-4" /></button>
-        <button onClick={zoomOut} disabled={zoom <= MIN_ZOOM} className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors" title="Zoom Out"><ZoomOut className="w-4 h-4" /></button>
-        <button onClick={resetZoom} className="w-8 h-8 flex items-center justify-center bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-xs" title="Reset Zoom">1:1</button>
-        <div className="text-xs text-center text-gray-600 font-mono">{Math.round(zoom * 100)}%</div>
-        
-        {showActionControls && (
-          <>
-          {actionRef.current.confirm && (
-            <button onClick={handleConfirm} className="w-8 h-8 flex items-center justify-center bg-green-500 text-white rounded hover:bg-green-600 transition-colors" title="Confirm Mask"><Check className="w-4 h-4" /></button>
-            )}
-            {actionRef.current.undo && (
-              <button onClick={handleUndo} className="w-8 h-8 flex items-center justify-center bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors" title="Undo Last Click"><RotateCcw className="w-4 h-4" /></button>
-            )}
-            {actionRef.current.reset && (
-              <button onClick={handleReset} className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded hover:bg-red-600 transition-colors" title="Reset Clicks"><X className="w-4 h-4" /></button>
-            )}
-          </>
-        )}
-       
-      </div>
-      
-      <Stage 
-        ref={stageRef} 
-        width={dimensions.width} 
-        height={dimensions.height} 
-        scaleX={zoom} 
-        scaleY={zoom} 
-        x={stagePos.x} 
-        y={stagePos.y} 
-        onWheel={handleWheel} 
-        draggable={zoom > 1} 
-        onDragStart={handleDragStart} 
-        onDragEnd={handleDragEnd} 
-        onDragMove={handleDragMove} 
-        onPointerMove={handleMouseMove}
-      >
-        {/* Base image layer */}
-        <Layer>
-          <Image 
-            image={image} 
-            x={0} 
-            y={0} 
-            width={dimensions.width} 
-            height={dimensions.height} 
-            objectFit={"contain"} 
-          />
-        </Layer>
+      <MaskControls
+        selectedMaskId={selectedMaskId}
+        maskState={maskState}
+        selectedShade={selectedShade}
+        tileRepetition={tileRepetition}
+        setTileRepetition={setTileRepetition}
+        isPerspectiveMode={isPerspectiveMode}
+        resetPerspective={resetPerspective}
+        togglePerspectiveMode={togglePerspectiveMode}
+        handleApplySelectedShade={handleApplySelectedShade}
+        cycleBlendMode={cycleBlendMode}
+        currentBlendIndex={currentBlendIndex}
+        blendModes={blendModes}
+        removeShadeFromMask={removeShadeFromMask}
+      />
 
-        {/* Interactive modes layer - rendered below confirmed masks */}
-        <Layer>
-          {mode === "lasso" && (
-            <LassoMode
-            setShowActionControls={setShowActionControls}
-            setSelectedMaskId={setSelectedMaskId}
-             register={register} width={dimensions.width} height={dimensions.height} />
-          )}
-          {mode === "hover" && (
-            <HoverMode
-              register={register}
+      <ViewModeSwitcher viewMode={viewMode} setViewMode={setViewMode} />
+
+      <ZoomControls
+        zoom={zoom}
+        zoomIn={zoomIn}
+        zoomOut={zoomOut}
+        resetZoom={resetZoom}
+        MAX_ZOOM={MAX_ZOOM}
+        MIN_ZOOM={MIN_ZOOM}
+        selectedMaskId={selectedMaskId}
+        removeMask={removeMask}
+        setSelectedMaskId={setSelectedMaskId}
+        setMode={setMode}
+        mode={mode}
+        viewMode={viewMode}
+        showActionControls={showActionControls}
+        actionRef={actionRef}
+        handleConfirm={handleConfirm}
+        handleUndo={handleUndo}
+        handleReset={handleReset}
+      />
+
+      {/* Image Wrapper to constrain slider and stage */}
+      <div
+        ref={imageWrapperRef}
+        style={{
+          width: dimensions.width,
+          height: dimensions.height,
+          position: 'relative'
+        }}
+      >
+        <CompareSliderOverlay
+          viewMode={viewMode}
+          sliderPosition={sliderPosition}
+          setIsResizing={setIsResizing}
+          isResizing={isResizing}
+        />
+
+        <Stage
+          ref={stageRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          scaleX={zoom}
+          scaleY={zoom}
+          x={stagePos.x}
+          y={stagePos.y}
+          onWheel={handleWheel}
+          draggable={zoom > 1 && !isPerspectiveMode}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragMove={handleDragMove}
+          onPointerMove={handleMouseMove}
+        >
+          {/* Base image layer */}
+          <Layer>
+            <Image
+              image={image}
+              x={0}
+              y={0}
               width={dimensions.width}
               height={dimensions.height}
-              setSelectedMaskId={setSelectedMaskId}
-              setShowActionControls={setShowActionControls}
-              isOverConfirmedMask={hoveredMaskId !== null}
+              objectFit={"contain"}
             />
-          )}
-          {mode === "polygon" && (
-            <PenMode 
-            setSelectedMaskId={setSelectedMaskId}
-            setShowActionControls={setShowActionControls}
-            register={register} width={dimensions.width} height={dimensions.height} />
-          )}
-        </Layer>
+          </Layer>
 
-        {/* Confirmed masks layer - rendered on top with proper clipping */}
-        <Layer>
-          {maskState && maskState.map(({mask, id}, index) => (
-            <Group 
-              key={`mask-group-${index}`}
-              onClick={() => {
-                if(!showActionControls){
-                  setSelectedMaskId(id)
-                }
-              }}
-              clipFunc={(ctx) => {
-                const {width, imageData} = mask;
-                const scaleRatio = dimensions.width/width;
-                ctx.beginPath();
-                const rowRects = getSolidMaskRows(imageData)
-                if (!rowRects || rowRects.length === 0) {
-                  ctx.rect(0, 0, dimensions.width, dimensions.height);
-                }else {
-                  rowRects.forEach(({ x, y, width, height }) => {
-                    ctx.rect(x * scaleRatio, y * scaleRatio, width * scaleRatio, height * scaleRatio);
-                  });
-                }
-                ctx.clip();
-              }}
-            >
-              <Shape
-                sceneFunc={(context, shape) => {
-                  const {imageData} = mask;
-                  const scaleRatio = dimensions.width / scale.width;
-                  const rects = getSolidMaskRows(imageData);
-                  const boundaryCoords = getBoundaryFromImageData(imageData);
-                  const rgba = mask.maskColor || [255, 0, 0, 150];
-                  const alpha = selectedMaskId === id ? 0.3: hoveredMaskId === id ? 0.1 : 0;
-                  const strokeAlpha = selectedMaskId === id ? 1 : hoveredMaskId === id ? 0.5 : 0;
-                  // 1. Fill the mask area
-                  context.beginPath();
-                  rects.forEach(({ x, y, width, height }) => {
-                    context.rect(
-                      x * scaleRatio,
-                      y * scaleRatio,
-                      width * scaleRatio,
-                      height * scaleRatio
-                    );
-                  });
-                  context.fillStyle = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${alpha})`;
-                  context.fill();
-                  context.fillShape(shape);
-                  // context.closePath();
-                  // 2. Draw stroke around the mask
-                  context.beginPath();
-                  boundaryCoords.forEach(({ x, y }) => {
-                    context.rect(x * scaleRatio, y * scaleRatio, 1, 1);
-                  });
-                  context.strokeStyle = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${strokeAlpha})`;
-                  context.lineWidth = 1.5;
-                  context.stroke();
-                  context.fillStrokeShape(shape);
-                }}
-                opacity={1}
+          {/* Interactive modes layer - rendered below confirmed masks */}
+          <Layer>
+            {viewMode === 'interact' && mode === "lasso" && (
+              <LassoMode
+                setShowActionControls={setShowActionControls}
+                setSelectedMaskId={setSelectedMaskId}
+                register={register} width={dimensions.width} height={dimensions.height} />
+            )}
+            {viewMode === 'interact' && mode === "hover" && (
+              <HoverMode
+                register={register}
+                width={dimensions.width}
+                height={dimensions.height}
+                setSelectedMaskId={setSelectedMaskId}
+                setShowActionControls={setShowActionControls}
+                isOverConfirmedMask={hoveredMaskId !== null}
               />
-            </Group>
-          ))}
-        </Layer>
-      </Stage>
-    </div>
+            )}
+            {viewMode === 'interact' && mode === "polygon" && (
+              <PenMode
+                setSelectedMaskId={setSelectedMaskId}
+                setShowActionControls={setShowActionControls}
+                register={register} width={dimensions.width} height={dimensions.height} />
+            )}
+          </Layer>
+
+          {/* Applied shades and masks layer */}
+          <Layer>
+            {maskState && maskState.map((maskData, index) => (
+              <MaskItem
+                key={`mask-item-${maskData.id}`}
+                maskData={maskData}
+                dimensions={dimensions}
+                scale={scale}
+                isSelected={selectedMaskId === maskData.id}
+                isHovered={hoveredMaskId === maskData.id}
+                onClick={() => {
+                  if (!showActionControls && !isPerspectiveMode && viewMode !== 'compare') {
+                    setSelectedMaskId(maskData.id)
+                  }
+                }}
+              />
+            ))}
+          </Layer>
+
+          {/* Perspective Handles Layer */}
+          <Layer>
+            {isPerspectiveMode && perspectivePoints && (
+              <Group>
+                {perspectivePoints.map((point, index) => {
+                  const scaleRatio = dimensions.width / scale.width;
+                  return (
+                    <Circle
+                      key={index}
+                      x={point.x * scaleRatio}
+                      y={point.y * scaleRatio}
+                      radius={8 / zoom} // Keep handle size constant visually
+                      fill="white"
+                      stroke="purple"
+                      strokeWidth={2 / zoom}
+                      draggable
+                      onDragMove={(e) => handlePerspectiveDrag(index, e)}
+                      onDragEnd={handlePerspectiveDragEnd}
+                      onMouseEnter={(e) => {
+                        const container = e.target.getStage().container();
+                        container.style.cursor = "move";
+                      }}
+                      onMouseLeave={(e) => {
+                        const container = e.target.getStage().container();
+                        container.style.cursor = "default";
+                      }}
+                    />
+                  );
+                })}
+                {/* Draw connecting lines for better visualization */}
+                <Shape
+                  sceneFunc={(ctx, shape) => {
+                    const scaleRatio = dimensions.width / scale.width;
+                    ctx.beginPath();
+                    ctx.moveTo(perspectivePoints[0].x * scaleRatio, perspectivePoints[0].y * scaleRatio);
+                    ctx.lineTo(perspectivePoints[1].x * scaleRatio, perspectivePoints[1].y * scaleRatio);
+                    ctx.lineTo(perspectivePoints[2].x * scaleRatio, perspectivePoints[2].y * scaleRatio);
+                    ctx.lineTo(perspectivePoints[3].x * scaleRatio, perspectivePoints[3].y * scaleRatio);
+                    ctx.closePath();
+                    ctx.strokeStyle = "rgba(128, 0, 128, 0.5)";
+                    ctx.lineWidth = 2 / zoom;
+                    ctx.stroke();
+                  }}
+                />
+              </Group>
+            )}
+          </Layer>
+
+          {/* Compare Mode: Before Image Layer (Clipped) */}
+          {viewMode === 'compare' && (
+            <Layer>
+              <Group
+                clipFunc={(ctx) => {
+                  const sliderScreenX = (dimensions.width * sliderPosition) / 100;
+                  const clipX = (sliderScreenX - stagePos.x) / zoom;
+
+                  ctx.rect(
+                    -10000, // Far left
+                    -10000, // Top
+                    clipX - (-10000), // Width to reach clipX
+                    20000 // Large height
+                  );
+                }}
+              >
+                <Image
+                  image={image}
+                  x={0}
+                  y={0}
+                  width={dimensions.width}
+                  height={dimensions.height}
+                  objectFit={"contain"}
+                />
+              </Group>
+            </Layer>
+          )}
+        </Stage>
+      </div>
+    </div >
   );
 }

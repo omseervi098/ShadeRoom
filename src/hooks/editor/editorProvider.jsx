@@ -1,12 +1,12 @@
-import { EditorContext } from "./editorContext.js";
+import { useCallback, useEffect, useState } from "react";
 import { getImageEmbedding } from "../../utils/modelHelpers.js";
-import { useState, useCallback, useEffect } from "react";
+import { EditorContext } from "./editorContext.js";
 
 export const EditorProvider = ({ children }) => {
   const [image, setImage] = useState(null); // HTMLImageElement of Main Image
   const [clicks, setClicks] = useState([]);
   const [lastPredMask, setLastPredMask] = useState(null);
-  const [maskOutput, setMaskOutput] = useState(null); 
+  const [maskOutput, setMaskOutput] = useState(null);
   const [error, setError] = useState(null);
   const [shades, setShades] = useState({
     textures: [],
@@ -22,16 +22,78 @@ export const EditorProvider = ({ children }) => {
   const [embeddingStatus, setEmbeddingStatus] = useState(""); //status for
   // embedding
   const [mode, setMode] = useState("hover");
+  const [viewMode, setViewMode] = useState("interact"); // 'view', 'interact', 'compare'
 
   const [maskState, setMaskState] = useState([]); // New state for confirmed masks
+  const [operations, setOperations] = useState([]); // State for all operations for undo/redo
+
+
 
   const addMask = (mask) => {
-    setMaskState((prev) => [...prev, mask]);
+    setMaskState((prev) => [...prev, { ...mask, appliedShade: null }]);
   };
   const removeMask = (id) => {
     setMaskState(prev => prev.filter(mask => mask.id !== id));
   };
 
+  const applyShadeToMask = (maskId, shade) => {
+    setMaskState(prev => {
+      const currentMask = prev.find(m => m.id === maskId);
+      if (currentMask) {
+        const operation = {
+          type: "shade",
+          action: shade.type,
+          maskId: maskId,
+          previousShade: currentMask.appliedShade,
+          newShade: shade
+        };
+        setOperations(prevOps => [...prevOps, operation]);
+      }
+
+      return prev.map(maskItem =>
+        maskItem.id === maskId
+          ? { ...maskItem, appliedShade: shade }
+          : maskItem
+      );
+    });
+  };
+  const removeShadeFromMask = (maskId) => {
+    setMaskState(prev => prev.map(mask =>
+      mask.id === maskId
+        ? { ...mask, appliedShade: null }
+        : mask
+    ));
+  };
+
+  const undoShade = () => {
+    setOperations(prevOps => {
+      if (prevOps.length === 0) return prevOps;
+      const lastOp = prevOps[prevOps.length - 1];
+      const newOps = prevOps.slice(0, -1);
+
+      if (lastOp.type === "shade") {
+        setMaskState(prevMasks => prevMasks.map(mask =>
+          mask.id === lastOp.maskId
+            ? { ...mask, appliedShade: lastOp.previousShade }
+            : mask
+        ));
+      }
+      return newOps;
+    });
+  };
+
+  const resetShades = () => {
+    setMaskState(prev => prev.map(mask => ({ ...mask, appliedShade: null })));
+    setOperations([]);
+  };
+
+  const applyPerspectiveToMask = (maskId, points) => {
+    setMaskState(prev => prev.map(maskItem =>
+      maskItem.id === maskId
+        ? { ...maskItem, perspectivePoints: points }
+        : maskItem
+    ));
+  };
   useEffect(() => {
     if (image) {
       setEmbeddingStatus("loading");
@@ -127,6 +189,8 @@ export const EditorProvider = ({ children }) => {
         maskState,
         addMask,
         removeMask,
+        applyShadeToMask,
+        applyPerspectiveToMask,
         setMode,
         addColors,
         removeColor,
@@ -134,6 +198,11 @@ export const EditorProvider = ({ children }) => {
         updateScale,
         addTextures,
         updateImage,
+        viewMode,
+        setViewMode,
+        removeShadeFromMask,
+        undoShade,
+        resetShades,
       }}
     >
       {children}

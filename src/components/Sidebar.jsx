@@ -1,20 +1,19 @@
-import { useState } from "react";
 import {
-  Fullscreen,
-  RefreshCw,
-  RotateCcw,
-  RotateCw,
-  Grid,
   Droplet,
-  Mouse,
-  PenTool,
+  Fullscreen,
+  Grid,
   Lasso,
+  Mouse,
   MousePointer,
+  PenTool,
+  RefreshCw,
+  RotateCcw
 } from "lucide-react";
+import { useState } from "react";
 import { useEditor } from "../hooks/editor/editorContext.js";
 
 export default function Sidebar({ colors, textures }) {
-  const { selectedShade, setSelectedShade, setMode } = useEditor();
+  const { selectedShade, setSelectedShade, setMode, undoShade, resetShades } = useEditor();
   const [activeTab, setActiveTab] = useState(null);
 
   const toggleTab = (tab) => {
@@ -55,14 +54,14 @@ export default function Sidebar({ colors, textures }) {
 
         <button
           className="md:w-full bg-secondary rounded-full lg:rounded-md p-2 flex items-center justify-evenly gap-2 cursor-pointer hover:bg-secondary/70"
-          onClick={() => toggleTab("tools")}
+          onClick={() => resetShades()}
         >
           <RefreshCw size={22} />
           <span className="hidden lg:block font-semibold text-sm">Reset</span>
         </button>
         <button
           className="md:w-full bg-secondary rounded-full lg:rounded-md p-2 flex items-center justify-evenly gap-2 cursor-pointer hover:bg-secondary/70"
-          onClick={() => toggleTab("tools")}
+          onClick={() => undoShade()}
         >
           <RotateCcw size={22} />
           <span className="hidden lg:block font-semibold text-sm">Undo</span>
